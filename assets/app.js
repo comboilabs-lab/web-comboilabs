@@ -63,7 +63,7 @@
         '<div class="wrap nav">'+
           '<a href="index.html" class="logo">'+
             '<span class="term-dots" aria-hidden="true"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></span>'+
-            'COMBOI<em>*</em>'+
+            '<img class="logo-img" src="assets/img/logo-comboi.png" alt="Comboi Labs">'+
             '<span class="head-caret" aria-hidden="true"></span>'+
           '</a>'+
           '<nav class="nav-links" id="navLinks" aria-label="Navegación principal">'+

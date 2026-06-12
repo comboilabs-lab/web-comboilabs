@@ -77,6 +77,8 @@ header.site{
   font-weight:700;font-size:18px;letter-spacing:.5px;white-space:nowrap;
 }
 .logo em{font-style:normal;color:var(--cobalt)}
+.logo-img{height:22px;width:auto;display:block}
+header.site[data-header="terminal"] .logo-img{filter:invert(1)}
 .nav-links{display:flex;gap:8px;align-items:center}
 .nav-links .lnk{
   font-family:'Space Mono',monospace;font-size:12px;
