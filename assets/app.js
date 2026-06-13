@@ -372,13 +372,14 @@
     els.forEach(function(el){ el.classList.add('ma'); });
 
     if(!('IntersectionObserver' in window)){
-      els.forEach(function(el){ el.classList.add('ma-in'); });
+      els.forEach(function(el){ el.classList.remove('ma'); el.classList.add('ma-in'); });
       return;
     }
 
     var io = new IntersectionObserver(function(entries, obs){
       entries.forEach(function(entry){
         if(entry.isIntersecting){
+          entry.target.classList.remove('ma');
           entry.target.classList.add('ma-in');
           obs.unobserve(entry.target);
         }
