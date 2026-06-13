@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>
+(function(){
+  var t = localStorage.getItem('comboi_theme');
+  if (t === 'dark') document.documentElement.classList.add('dark');
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agentes de IA y automatización para empresas — Comboi Labs</title>
@@ -123,6 +129,18 @@
 
 .wa-hint{font-family:'Space Mono',monospace;font-size:11px;color:#25D366;letter-spacing:1px;transition:opacity .4s}
 .wa-hint.hidden{opacity:0;pointer-events:none}
+
+/* — modo oscuro: WhatsApp adopta su propia paleta dark — */
+html.dark .wa-phone{background:#0B141A}
+html.dark .wa-messages{background-color:#0B141A}
+html.dark .wa-date-sep{background:rgba(0,0,0,.4);color:#CFD9DE;box-shadow:none}
+html.dark .wa-bubble-in{background:#202C33}
+html.dark .wa-bubble-out{background:#005C4B}
+html.dark .wa-bubble-in .wa-bubble-text,html.dark .wa-bubble-out .wa-bubble-text{color:#E9EDEF}
+html.dark .wa-time{color:#8696A0}
+html.dark .wa-input-bar{background:#1F2C34}
+html.dark .wa-input{background:#2A3942;color:#E9EDEF}
+html.dark .wa-input::placeholder{color:#8696A0}
 
 @media (max-width:1024px){
   .hero-split{grid-template-columns:1fr;gap:32px}
@@ -327,6 +345,7 @@
 
 <script src="assets/terminal-easter-egg.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/theme.js"></script>
 <script src="assets/wa-sim.js"></script>
 </body>
 </html>

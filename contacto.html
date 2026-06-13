@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>
+(function(){
+  var t = localStorage.getItem('comboi_theme');
+  if (t === 'dark') document.documentElement.classList.add('dark');
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contacto — Comboi Labs</title>
@@ -137,6 +143,7 @@ plazo:   <span class="s">"próximo hueco: consúltanos"</span></pre>
 
 <script src="assets/terminal-easter-egg.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/theme.js"></script>
 <script>
 (function(){
   var form = document.getElementById('contactForm');

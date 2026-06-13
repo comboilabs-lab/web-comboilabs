@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>
+(function(){
+  var t = localStorage.getItem('comboi_theme');
+  if (t === 'dark') document.documentElement.classList.add('dark');
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Desarrollo de apps móviles iOS y Android — Comboi Labs</title>
@@ -175,6 +181,19 @@
 
 .sim-hint{font-family:'Space Mono',monospace;font-size:11px;color:#5BE0B3;letter-spacing:1px;transition:opacity .4s}
 .sim-hint.hidden{opacity:0;pointer-events:none}
+
+/* — modo oscuro: la pantalla simulada adopta tonos oscuros — */
+html.dark .phone-screen-wrap{background:#1A1714}
+html.dark .sim-screen{background:#23201C}
+html.dark .order-item,html.dark .detail-items,html.dark .eta-card{background:#2E2A25;border-color:#3A352F}
+html.dark .order-name,html.dark .detail-row,html.dark .detail-client,html.dark .detail-id,
+html.dark .confirm-title,html.dark .eta-time{color:#F2EEE7}
+html.dark .detail-row{border-bottom-color:#3A352F}
+html.dark .search-bar{background:#2E2A25;border-color:#3A352F;color:#B8AFA3}
+html.dark .action-btn.secondary{background:#2E2A25}
+html.dark .bottom-nav{background:#23201C;border-color:#3A352F}
+html.dark .map-placeholder{background:#2E2A25}
+html.dark .map-grid{background-image:linear-gradient(#3A352F 1px,transparent 1px),linear-gradient(90deg,#3A352F 1px,transparent 1px)}
 
 @media (max-width:1024px){
   .hero-split{grid-template-columns:1fr;gap:32px}
@@ -475,6 +494,7 @@
 
 <script src="assets/terminal-easter-egg.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/theme.js"></script>
 <script src="assets/phone-sim.js"></script>
 </body>
 </html>

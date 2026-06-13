@@ -5,6 +5,7 @@
 :root{
   --bg:#F5F4ED;
   --surface:#FFFFFF;
+  --surface-2:#F0EEE6;
   --ink:#221F1C;
   --ink-2:#6E6860;
   --ink-3:#A9A299;
@@ -22,6 +23,27 @@
   --glow-mint:rgba(217,119,87,.16);
   --glass-border:rgba(255,255,255,.07);
 }
+
+/* ---------- Modo oscuro ---------- */
+html.dark{
+  --bg:#1A1714;
+  --surface:#23201C;
+  --surface-2:#2E2A25;
+  --ink:#F2EEE7;
+  --ink-2:#B8AFA3;
+  --ink-3:#7D7568;
+  --line:#3A352F;
+  --cobalt-soft:rgba(217,119,87,.18);
+}
+
+/* ---------- Transición global de tema ---------- */
+body,header.site,.stack,.svc,.dcard,.step,.tile,.proc-band,.cta-band,
+footer.site,.statusbar,.codeblock,.form,.field input,.field textarea,
+.field select,.info-card,.member,.value,.proj,.ph,.faq details,
+.term-cmd-btn,.tag,.crumbs a,.nav-links .lnk,.btn.ghost,.theme-toggle{
+  transition:background-color .25s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
@@ -58,6 +80,14 @@ img{max-width:100%;display:block}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
 .btn.ghost:hover{box-shadow:0 8px 24px rgba(16,19,26,.12)}
 .btn.small{padding:9px 16px;font-size:13px}
+
+/* ---------- Toggle de tema ---------- */
+.theme-toggle{
+  background:transparent;border:1px solid var(--line);border-radius:6px;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:15px;flex-shrink:0;color:var(--ink);
+}
+.theme-toggle:hover{background:var(--cobalt-soft);border-color:var(--cobalt)}
 
 /* =========================================================
    HEADER  (3 variantes conmutables: brackets / tabs / terminal)
@@ -648,4 +678,15 @@ body.comboi-mode .svc,body.comboi-mode .dcard,body.comboi-mode .step,body.comboi
   .statusbar .wrap span:nth-child(2),
   .statusbar .wrap span:nth-child(3),
   .statusbar .wrap span:nth-child(5){display:none}
+}
+
+/* ---------- Ajustes modo oscuro ---------- */
+html.dark header.site{background:rgba(26,23,20,.72)}
+html.dark header.site[data-header="tabs"] .nav-links .lnk:hover{background:rgba(255,255,255,.06)}
+html.dark .field input,html.dark .field textarea{background:var(--surface)}
+html.dark .proj,html.dark .ph{
+  background:repeating-linear-gradient(135deg,var(--surface),var(--surface) 14px,var(--surface-2) 14px,var(--surface-2) 28px);
+}
+html.dark .member .avatar{
+  background:repeating-linear-gradient(135deg,var(--surface-2),var(--surface-2) 12px,var(--tile-dark-2) 12px,var(--tile-dark-2) 24px);
 }

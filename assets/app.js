@@ -84,12 +84,16 @@
           '</a>'+
           '<nav class="nav-links" id="navLinks" aria-label="Navegación principal">'+
             navHTML()+
+            '<button class="theme-toggle" id="themeToggle" aria-label="Cambiar a modo oscuro">'+
+              '<span class="theme-icon">☽</span>'+
+            '</button>'+
             '<a href="contacto.html" class="btn small">Contacto →</a>'+
           '</nav>'+
           '<button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button>'+
         '</div>'+
       '</header>';
     wireMenu();
+    if(window.comboiTheme) window.comboiTheme.wireToggle();
   }
 
   function wireMenu(){

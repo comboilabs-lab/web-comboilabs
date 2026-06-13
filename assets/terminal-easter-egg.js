@@ -36,6 +36,7 @@
     proyectos: 'estado de los casos publicados',
     contacto: 'cómo hablar con nosotros',
     stack: 'con qué construimos',
+    theme: 'cambia entre modo claro y oscuro (theme dark/light)',
     play: 'lanza el debug runner',
     clear: 'limpia la pantalla',
     exit: 'cierra la terminal'
@@ -217,6 +218,18 @@
         printLine('movil: react-native');
         printLine('ia: claude-api');
         printLine('infra: docker');
+        break;
+      case 'theme dark':
+        if(window.comboiTheme) window.comboiTheme.apply('dark');
+        printLine('→ modo oscuro activado · ☽', 'ok');
+        break;
+      case 'theme light':
+        if(window.comboiTheme) window.comboiTheme.apply('light');
+        printLine('→ modo claro activado · ☀', 'ok');
+        break;
+      case 'theme':
+        var current = window.comboiTheme ? window.comboiTheme.current() : 'light';
+        printLine('→ tema actual: ' + (current === 'dark' ? 'oscuro' : 'claro'));
         break;
       case 'play':
         printLine('→ lanzando debug_runner.exe...', 'ok');

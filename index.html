@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>
+(function(){
+  var t = localStorage.getItem('comboi_theme');
+  if (t === 'dark') document.documentElement.classList.add('dark');
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Comboi Labs — Desarrollo de software a medida en Benissa, Alicante</title>
@@ -106,8 +112,9 @@
 .bubble{font-size:13px;line-height:1.45;border-radius:12px;padding:9px 13px;max-width:88%;margin-bottom:9px}
 body.js .tile.chat .bubble{opacity:0}
 body.js .tile.chat .bubble.show{opacity:1}
-.bubble.them{background:#EFEAE0;color:var(--ink);border-bottom-left-radius:3px}
+.bubble.them{background:#EFEAE0;color:#221F1C;border-bottom-left-radius:3px}
 .bubble.us{background:var(--cobalt);color:#fff;margin-left:auto;border-bottom-right-radius:3px}
+html.dark .bubble.them{background:var(--surface-2);color:var(--ink)}
 .typing{display:inline-flex;gap:4px;padding:4px 2px}
 .typing i{width:6px;height:6px;border-radius:50%;background:#fff;opacity:.5;animation:blink 1s infinite}
 .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
@@ -531,6 +538,7 @@ body.js .tile.term .t-line.show{opacity:1}
 
 <script src="assets/terminal-easter-egg.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/theme.js"></script>
 <script src="assets/debug-runner.js"></script>
 </body>
 </html>
