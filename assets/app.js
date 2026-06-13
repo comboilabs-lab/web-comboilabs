@@ -258,6 +258,122 @@
     }
   }
 
+  /* ---- Panel de obra interactivo (tile dark): barras + registrar_parte ---- */
+  function wireDarkTile(){
+    var darkTile = document.querySelector('.tile.dark');
+    if(!darkTile) return;
+    var bars = darkTile.querySelectorAll('.bar');
+    var addBtn = document.getElementById('addParteBtn');
+    var output = document.getElementById('parteOutput');
+    var kpiBox = darkTile.querySelector('.kpi.a');
+    var kpiNum = kpiBox ? kpiBox.querySelector('.num') : null;
+    if(!bars.length) return;
+
+    var tooltip = document.createElement('div');
+    tooltip.className = 'bar-tooltip';
+    darkTile.appendChild(tooltip);
+    var hideTimer;
+
+    bars.forEach(function(bar){
+      bar.addEventListener('click', function(){
+        var d = bar.dataset;
+        tooltip.textContent = d.day + ' · ' + d.partes + ' partes · ' + d.operarios + ' operarios · ' + d.inc + ' incidencias';
+        var barRect = bar.getBoundingClientRect();
+        var tileRect = darkTile.getBoundingClientRect();
+        tooltip.style.left = (barRect.left - tileRect.left + barRect.width / 2) + 'px';
+        tooltip.style.top = (barRect.top - tileRect.top - 32) + 'px';
+        tooltip.style.transform = 'translateX(-50%)';
+        tooltip.classList.add('show');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(function(){ tooltip.classList.remove('show'); }, 2500);
+      });
+    });
+
+    document.addEventListener('click', function(e){
+      if(!e.target.classList.contains('bar')) tooltip.classList.remove('show');
+    });
+
+    if(addBtn && output && kpiNum){
+      var registrations = 0;
+      addBtn.addEventListener('click', function(){
+        if(registrations >= 3) return;
+        addBtn.disabled = true;
+        output.textContent = '→ validando datos...';
+        output.className = 'parte-output show';
+
+        setTimeout(function(){
+          output.textContent = '✓ parte registrado · obra #3 · 09:42';
+          output.classList.add('ok');
+
+          var current = parseInt(kpiNum.textContent, 10) || 0;
+          kpiNum.textContent = current + 1;
+          kpiBox.classList.add('flash');
+          setTimeout(function(){ kpiBox.classList.remove('flash'); }, 600);
+
+          var lastBar = bars[bars.length - 1];
+          var currentHeight = parseFloat(lastBar.style.height) || 0;
+          lastBar.style.height = Math.min(currentHeight + 6, 100) + '%';
+
+          registrations++;
+
+          setTimeout(function(){
+            if(registrations >= 3){
+              output.classList.remove('show', 'ok');
+              addBtn.innerHTML = '<span class="prompt-char">//</span> límite demo alcanzado';
+            } else {
+              output.classList.remove('show', 'ok');
+              addBtn.disabled = false;
+            }
+          }, 2000);
+        }, 600);
+      });
+    }
+  }
+
+  /* ---- App móvil interactiva (tile mintbg): navegación entre pantallas ---- */
+  function wireMintPhone(){
+    var wrap = document.getElementById('phoneScreens');
+    if(!wrap) return;
+    var screens = wrap.querySelectorAll('.phone-screen');
+    if(!screens.length) return;
+    var current = 0;
+    var resetTimer;
+
+    function scheduleReset(){
+      clearTimeout(resetTimer);
+      if(current !== 0){
+        resetTimer = setTimeout(function(){ goTo(0, 'back'); }, 4000);
+      }
+    }
+
+    function goTo(index, dir){
+      if(index === current || index < 0 || index >= screens.length) return;
+      var incoming = screens[index];
+      var outgoing = screens[current];
+      incoming.style.transition = 'none';
+      incoming.style.transform = dir === 'fwd' ? 'translateX(100%)' : 'translateX(-100%)';
+      incoming.classList.add('current');
+      outgoing.classList.remove('current');
+      void incoming.offsetHeight; // forzar reflow
+      incoming.style.transition = '';
+      incoming.style.transform = '';
+      current = index;
+      scheduleReset();
+    }
+
+    screens.forEach(function(screen){
+      screen.querySelectorAll('[data-nav]').forEach(function(row){
+        row.addEventListener('click', function(){
+          var nav = row.getAttribute('data-nav');
+          if(nav === 'back') goTo(current - 1, 'back');
+          else goTo(parseInt(nav, 10), 'fwd');
+        });
+      });
+    });
+
+    screens[0].classList.add('current');
+  }
+
   /* ---- Chat real del bento (demo con la API de Claude) ---- */
   function wireBentoChat(){
     var chatTile = document.querySelector('.tile.chat');
@@ -305,6 +421,8 @@
       if(!chatLive){
         chatLive = true;
         chatDemo.querySelectorAll('.bubble').forEach(function(b){ b.remove(); });
+        var hint = chatTile.querySelector('.interact-hint');
+        if(hint) hint.classList.add('hidden');
       }
 
       addBubble(text, 'us');
@@ -428,12 +546,51 @@
         if(entry.isIntersecting){
           entry.target.classList.remove('ma');
           entry.target.classList.add('ma-in');
+          markTileWelcome(entry.target);
           obs.unobserve(entry.target);
         }
       });
     }, { threshold: 0.12 });
 
     els.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ---- Señales de bienvenida por tile (pulso de borde + badge "· click") ---- */
+  function markTileWelcome(tile){
+    if(!tile.matches('.tile.dark, .tile.chat, .tile.mintbg, .tile.term')) return;
+    tile.classList.add('welcome-pulse');
+    var hint = tile.querySelector('.interact-hint');
+    if(hint) setTimeout(function(){ hint.classList.add('visible'); }, 400);
+  }
+
+  /* ---- Interactividad de los tiles principales del bento ---- */
+  function wireTileInteractivity(){
+    var bento = document.getElementById('bento');
+    if(!bento) return;
+    var mainTiles = bento.querySelectorAll('.tile.dark, .tile.chat, .tile.mintbg, .tile.term');
+
+    mainTiles.forEach(function(tile, i){
+      var hint = tile.querySelector('.interact-hint');
+      function dismissHint(){
+        if(hint) hint.classList.add('hidden');
+      }
+      tile.addEventListener('click', dismissHint, { once:true });
+      tile.addEventListener('touchstart', dismissHint, { once:true, passive:true });
+
+      // Si IntersectionObserver no está disponible, marcamos la bienvenida ya
+      if(!('IntersectionObserver' in window)) markTileWelcome(tile);
+
+      // Pista de "toca" en móvil: pulso suave al cargar, escalonado
+      if(!reduced && window.matchMedia('(hover: none)').matches){
+        setTimeout(function(){
+          tile.classList.add('tap-hint');
+          tile.addEventListener('animationend', function handler(){
+            tile.classList.remove('tap-hint');
+            tile.removeEventListener('animationend', handler);
+          });
+        }, (i + 1) * 200);
+      }
+    });
   }
 
   /* ---- Glow de cursor en tarjetas (.svc, .dcard, .step) ---- */
@@ -493,10 +650,13 @@
   renderSwitch();
   wireHeroTyping();
   wireBento();
+  wireDarkTile();
+  wireMintPhone();
   wireBentoChat();
   wireChatPlaceholder();
   wireReveal();
   wireMicroAnimations();
+  wireTileInteractivity();
   wireCardGlow();
   wireHeroParallax();
   wireEasterEggs();

@@ -41,8 +41,24 @@
 .hero p.sub{font-size:18px;color:var(--ink-2);max-width:560px;margin:22px 0 30px}
 .hero-ctas{display:flex;gap:14px;flex-wrap:wrap}
 .bento{display:grid;grid-template-columns:1.45fr 1fr 1fr;grid-template-rows:auto auto;gap:14px;margin-top:56px}
-.tile{border-radius:var(--radius);padding:22px}
+.tile{border-radius:var(--radius);padding:22px;cursor:pointer;position:relative}
 .tile-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:14px}
+
+/* — señales de interactividad (bento) — */
+.tile:hover{border-color:#2B3CFF;transition:border-color .2s}
+.tile.dark:hover,.tile.term:hover{box-shadow:inset 0 0 0 1px #2B3CFF}
+@keyframes borderWelcome{0%{box-shadow:0 0 0 0 rgba(43,60,255,0)}40%{box-shadow:0 0 0 8px rgba(43,60,255,.25)}100%{box-shadow:0 0 0 0 rgba(43,60,255,0)}}
+.tile.welcome-pulse{animation:borderWelcome 1s ease-out forwards}
+.interact-hint{
+  position:absolute;top:10px;right:10px;
+  font-family:'Space Mono',monospace;font-size:10px;color:#5BE0B3;
+  background:rgba(10,13,20,.85);padding:3px 8px;border-radius:4px;
+  border:1px solid #5BE0B3;opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.interact-hint.visible{opacity:1}
+.interact-hint.hidden{opacity:0}
+@keyframes tapHint{0%,100%{transform:scale(1)}50%{transform:scale(1.012)}}
+.tile.tap-hint{animation:tapHint .4s ease}
 .tile.dark{background:var(--tile-dark);grid-row:span 2;position:relative;border:1px solid var(--glass-border);overflow:hidden}
 .tile.dark::before{
   content:"";position:absolute;inset:0;z-index:0;
@@ -58,10 +74,32 @@
 .kpi.a{background:var(--tile-dark-2)}.kpi.a .num{color:#fff}.kpi.a .lbl{color:var(--ink-3)}
 .kpi.b{background:var(--cobalt)}.kpi.b .num{color:#fff}.kpi.b .lbl{color:#FBE0D4}
 .chart{display:flex;align-items:flex-end;gap:6px;height:120px}
-.bar{flex:1;border-radius:4px;background:var(--cobalt);transform-origin:bottom;transform:scaleY(1)}
+.bar{flex:1;border-radius:4px;background:var(--cobalt);transform-origin:bottom;transform:scaleY(1);transition:height .4s ease}
 .bar.peak{background:var(--mint);animation:breathe 2.4s ease-in-out infinite}
 @keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.06)}}
 .tile.in .bar{transform:scaleY(1)}
+.bar-tooltip{
+  position:absolute;background:#1B2030;border:1px solid #2B3CFF;border-radius:6px;
+  padding:6px 10px;font-family:'Space Mono',monospace;font-size:10px;color:#C8CDFF;
+  white-space:nowrap;pointer-events:none;z-index:10;opacity:0;transition:opacity .2s;
+}
+.bar-tooltip.show{opacity:1}
+.add-parte-btn{
+  width:100%;margin-top:12px;background:transparent;border:1px solid #2B3CFF;border-radius:6px;
+  padding:8px 12px;font-family:'Space Mono',monospace;font-size:11px;color:#C8CDFF;
+  cursor:pointer;text-align:left;transition:background .2s;
+}
+.add-parte-btn:hover{background:rgba(43,60,255,.15)}
+.add-parte-btn:disabled{opacity:.5;cursor:default}
+.prompt-char{color:#5BE0B3;margin-right:6px}
+.parte-output{
+  font-family:'Space Mono',monospace;font-size:10px;margin-top:8px;min-height:14px;
+  color:#6B7390;opacity:0;transition:opacity .2s;
+}
+.parte-output.show{opacity:1}
+.parte-output.ok{color:#5BE0B3}
+@keyframes kpiFlash{0%,100%{background:var(--tile-dark-2)}40%{background:#2B3CFF}}
+.kpi.a.flash{animation:kpiFlash .6s ease}
 .tile.chat{background:var(--surface);border:1px solid var(--line)}
 .tile.chat .tile-label{color:var(--ink-3)}
 .bubble{font-size:13px;line-height:1.45;border-radius:12px;padding:9px 13px;max-width:88%;margin-bottom:9px}
@@ -93,17 +131,27 @@ body.js .tile.chat .bubble.show{opacity:1}
 }
 .chat-send:hover{opacity:.85}
 .chat-send:disabled{opacity:.4;cursor:default}
-.tile.mintbg{background:var(--cobalt-soft)}.tile.mintbg .tile-label{color:var(--mint-deep)}
+.tile.mintbg{background:var(--cobalt-soft);border:1px solid transparent}.tile.mintbg .tile-label{color:var(--mint-deep)}
 .phone{width:104px;margin:4px auto 0;background:var(--tile-dark);border-radius:16px;padding:9px;box-shadow:0 12px 30px rgba(217,119,87,.22);position:relative}
 .phone .notch{width:34%;height:13px;background:var(--tile-dark-2);border-radius:0 0 8px 8px;margin:0 auto 8px}
-.phone .row{border-radius:5px;margin-bottom:6px}
-.phone .row.r1{height:26px;background:var(--cobalt)}
-.phone .row.r2,.phone .row.r3{height:13px;background:var(--tile-dark-2)}
-.phone .row.r4{height:30px;background:var(--mint);margin-bottom:0}
 .phone .ping{
   position:absolute;top:-5px;right:-5px;width:15px;height:15px;border-radius:50%;
   background:var(--cobalt);border:2px solid var(--mint);
 }
+.phone-screens{position:relative;overflow:hidden;height:90px;border-radius:8px}
+.phone-screen{
+  position:absolute;inset:0;transform:translateX(100%);transition:transform .22s ease-out;
+  padding:4px;display:flex;flex-direction:column;gap:6px;z-index:1;
+}
+.phone-screen.current{transform:translateX(0);z-index:2}
+.phone-row{
+  border-radius:3px;height:11px;background:#1B2030;
+  font-family:'Space Mono',monospace;font-size:6px;line-height:11px;color:#C8CDFF;
+  padding:0 6px;overflow:hidden;white-space:nowrap;cursor:pointer;
+}
+.phone-row.active{background:#2B3CFF;color:#fff;height:18px;line-height:18px;font-size:7px}
+.phone-row.mint{background:#5BE0B3;color:#0A0D14;height:13px;font-weight:700}
+.phone-row.dim{background:#141720;color:#6B7390}
 .tile.term{background:var(--tile-dark);grid-column:span 2;padding:0;overflow:hidden;position:relative;border:1px solid var(--glass-border)}
 .tile.term::before{
   content:"";position:absolute;inset:0;z-index:0;
@@ -180,7 +228,7 @@ body.js .tile.term .t-line.show{opacity:1}
 <div class="wrap">
   <div class="hero" data-screen-label="Home">
     <span class="term-line"><span class="prompt">~/comboi&nbsp;$</span>&nbsp;<span id="termTyped">whoami → desarrollo de software a medida · benissa, alicante</span><span class="caret" aria-hidden="true"></span></span>
-    <h1>Construimos software a medida.<br><span class="hl" id="typedH1" data-text="Esto es lo que hace.">Esto es lo que hace.</span><span class="caret" id="h1Caret" style="width:.5em;height:.82em;vertical-align:baseline" aria-hidden="true" hidden></span></h1>
+    <h1>Construimos software a medida.<br><span class="hl" id="typedH1" data-text="Esto es lo que hacemos.">Esto es lo que hacemos.</span><span class="caret" id="h1Caret" style="width:.5em;height:.82em;vertical-align:baseline" aria-hidden="true" hidden></span></h1>
     <p class="sub">Web, apps móviles y agentes de IA para negocios que necesitan herramientas que funcionen de verdad. Desde Benissa (Alicante), para toda España. Sin plantillas, sin humo.</p>
     <div class="hero-ctas">
       <a href="contacto.html" class="btn">Cuéntanos tu proyecto →</a>
@@ -189,23 +237,27 @@ body.js .tile.term .t-line.show{opacity:1}
 
     <div class="bento" id="bento">
       <div class="tile dark">
+        <span class="interact-hint" aria-hidden="true">· click</span>
         <span class="tile-label">Panel de gestión · obra en tiempo real</span>
         <div class="kpis">
           <div class="kpi a"><span class="num" data-count="24">0</span><span class="lbl">Partes hoy</span></div>
           <div class="kpi b"><span class="num" data-count="6">0</span><span class="lbl">Obras activas</span></div>
         </div>
-        <div class="chart" aria-hidden="true">
-          <div class="bar" style="height:42%;transition-delay:.05s"></div>
-          <div class="bar" style="height:66%;transition-delay:.12s"></div>
-          <div class="bar" style="height:52%;transition-delay:.19s"></div>
-          <div class="bar peak" style="height:92%;transition-delay:.26s"></div>
-          <div class="bar" style="height:72%;transition-delay:.33s"></div>
-          <div class="bar" style="height:58%;transition-delay:.40s"></div>
-          <div class="bar" style="height:78%;transition-delay:.47s"></div>
+        <div class="chart">
+          <div class="bar" data-day="Lun" data-partes="3" data-operarios="8" data-inc="0" style="height:42%;transition-delay:.05s"></div>
+          <div class="bar" data-day="Mar" data-partes="4" data-operarios="9" data-inc="1" style="height:66%;transition-delay:.12s"></div>
+          <div class="bar" data-day="Mié" data-partes="3" data-operarios="7" data-inc="0" style="height:52%;transition-delay:.19s"></div>
+          <div class="bar peak" data-day="Jue" data-partes="5" data-operarios="11" data-inc="0" style="height:92%;transition-delay:.26s"></div>
+          <div class="bar" data-day="Vie" data-partes="4" data-operarios="9" data-inc="0" style="height:72%;transition-delay:.33s"></div>
+          <div class="bar" data-day="Sáb" data-partes="3" data-operarios="6" data-inc="1" style="height:58%;transition-delay:.40s"></div>
+          <div class="bar" data-day="Dom" data-partes="2" data-operarios="5" data-inc="0" style="height:78%;transition-delay:.47s"></div>
         </div>
+        <button type="button" class="add-parte-btn" id="addParteBtn"><span class="prompt-char">$</span> registrar_parte()</button>
+        <div class="parte-output" id="parteOutput"></div>
       </div>
 
       <div class="tile chat">
+        <span class="interact-hint" aria-hidden="true">· click</span>
         <span class="tile-label">Agente de IA · demo en vivo <span class="dot-live live-dot" aria-hidden="true"></span></span>
         <div id="chatDemo">
           <div class="bubble them">Hola, ¿tenéis hueco el jueves por la tarde?</div>
@@ -219,18 +271,36 @@ body.js .tile.term .t-line.show{opacity:1}
       </div>
 
       <div class="tile mintbg">
-        <span class="tile-label">App móvil · iOS y Android</span>
-        <div class="phone" aria-hidden="true">
+        <span class="interact-hint" aria-hidden="true">· click</span>
+        <span class="tile-label">App móvil · toca para navegar →</span>
+        <div class="phone">
           <div class="notch"></div>
-          <div class="row r1"></div>
-          <div class="row r2"></div>
-          <div class="row r3"></div>
-          <div class="row r4"></div>
+          <div class="phone-screens" id="phoneScreens">
+            <div class="phone-screen">
+              <div class="phone-row active">Mis obras</div>
+              <div class="phone-row" data-nav="1">Obra Benissa · activa</div>
+              <div class="phone-row">Obra Dénia · pausada</div>
+              <div class="phone-row mint">+ Nueva obra</div>
+            </div>
+            <div class="phone-screen">
+              <div class="phone-row active" data-nav="back">← Obra Benissa</div>
+              <div class="phone-row">12 partes</div>
+              <div class="phone-row">5 operarios</div>
+              <div class="phone-row mint" data-nav="2">Ver partes</div>
+            </div>
+            <div class="phone-screen">
+              <div class="phone-row active" data-nav="back">← Partes de hoy</div>
+              <div class="phone-row">08:00 · Juan García</div>
+              <div class="phone-row">09:15 · María López</div>
+              <div class="phone-row dim">+ registrar</div>
+            </div>
+          </div>
           <span class="ping blink"></span>
         </div>
       </div>
 
       <div class="tile term">
+        <span class="interact-hint" aria-hidden="true">· click</span>
         <div class="term-bar" aria-hidden="true">
           <i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i>
           <span class="term-title">comboi@deploy: ~/tu-proyecto</span>
