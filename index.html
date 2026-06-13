@@ -133,25 +133,25 @@ body.js .tile.chat .bubble.show{opacity:1}
 .chat-send:hover{opacity:.85}
 .chat-send:disabled{opacity:.4;cursor:default}
 .tile.mintbg{background:var(--cobalt-soft);border:1px solid transparent}.tile.mintbg .tile-label{color:var(--mint-deep)}
-.phone{width:150px;margin:4px auto 0;background:var(--tile-dark);border-radius:20px;padding:12px;box-shadow:0 12px 30px rgba(217,119,87,.22);position:relative}
-.phone .notch{width:34%;height:18px;background:var(--tile-dark-2);border-radius:0 0 10px 10px;margin:0 auto 10px}
+.phone{width:78%;max-width:230px;margin:4px auto 0;background:var(--tile-dark);border-radius:26px;padding:16px;box-shadow:0 12px 30px rgba(217,119,87,.22);position:relative}
+.phone .notch{width:34%;height:24px;background:var(--tile-dark-2);border-radius:0 0 14px 14px;margin:0 auto 14px}
 .phone .ping{
-  position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;
-  background:var(--cobalt);border:3px solid var(--mint);
+  position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;
+  background:var(--cobalt);border:4px solid var(--mint);
 }
-.phone-screens{position:relative;overflow:hidden;height:115px;border-radius:10px}
+.phone-screens{position:relative;overflow:hidden;height:160px;border-radius:14px}
 .phone-screen{
   position:absolute;inset:0;transform:translateX(100%);transition:transform .22s ease-out;
-  padding:5px;display:flex;flex-direction:column;gap:8px;z-index:1;
+  padding:7px;display:flex;flex-direction:column;gap:11px;z-index:1;
 }
 .phone-screen.current{transform:translateX(0);z-index:2}
 .phone-row{
-  border-radius:4px;height:15px;background:#1B2030;
-  font-family:'Space Mono',monospace;font-size:8px;line-height:15px;color:#C8CDFF;
-  padding:0 8px;overflow:hidden;white-space:nowrap;cursor:pointer;
+  border-radius:5px;height:21px;background:#1B2030;
+  font-family:'Space Mono',monospace;font-size:11px;line-height:21px;color:#C8CDFF;
+  padding:0 10px;overflow:hidden;white-space:nowrap;cursor:pointer;
 }
-.phone-row.active{background:#2B3CFF;color:#fff;height:24px;line-height:24px;font-size:9px}
-.phone-row.mint{background:#5BE0B3;color:#0A0D14;height:18px;font-weight:700}
+.phone-row.active{background:#2B3CFF;color:#fff;height:33px;line-height:33px;font-size:12px}
+.phone-row.mint{background:#5BE0B3;color:#0A0D14;height:25px}
 .phone-row.dim{background:#141720;color:#6B7390}
 .tile.term{background:var(--tile-dark);grid-column:span 2;padding:0;overflow:hidden;position:relative;border:1px solid var(--glass-border)}
 .tile.term::before{
