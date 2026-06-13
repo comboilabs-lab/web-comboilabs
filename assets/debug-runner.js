@@ -43,6 +43,7 @@
       if(e.code !== 'Space' && e.key !== ' ') return;
       var active = document.activeElement;
       if(active && (active.id === 'cmbTermInput' || active.id === 'chatInput')) return;
+      if(inView) e.preventDefault();
       handleAction();
     });
 
