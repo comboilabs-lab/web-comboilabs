@@ -112,6 +112,7 @@ header.site{
 .logo em{font-style:normal;color:var(--cobalt)}
 .logo-img{height:34px;width:auto;display:block}
 header.site[data-header="terminal"] .logo-img{filter:invert(1)}
+html.dark header.site:not([data-header="terminal"]) .logo-img{filter:invert(1)}
 .nav-links{display:flex;gap:8px;align-items:center}
 .nav-links .lnk{
   font-family:'Space Mono',monospace;font-size:12px;
