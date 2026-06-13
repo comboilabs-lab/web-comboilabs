@@ -8,8 +8,9 @@
   var RECORD_KEY = 'comboi_debug_runner_record';
   var GROUND_OFFSET = 28;
 
-  var tile, canvas, ctx, scoreEl, badgeEl;
+  var tile, canvas, ctx, scoreEl, badgeEl, instructionsEl, touchJumpBtn, touchActionBtn;
   var W = 0, H = 0, groundY = 0;
+  var SCALE = 1;
   var state = 'idle';
   var frame = 0;
   var score = 0;
@@ -25,19 +26,44 @@
   function randRange(min, max){ return min + Math.random() * (max - min); }
   function randInt(min, max){ return Math.floor(min + Math.random() * (max - min + 1)); }
 
+  function getScale(){
+    var w = window.innerWidth;
+    if(w < 640) return 0.75;
+    if(w < 920) return 0.88;
+    return 1;
+  }
+
   /* ---- inicio ---- */
   function init(){
     tile = document.querySelector('.tile.game');
     canvas = document.getElementById('gameCanvas');
     scoreEl = document.getElementById('grScore');
     badgeEl = tile ? tile.querySelector('.interactive-badge') : null;
+    instructionsEl = document.getElementById('grInstructions');
+    touchJumpBtn = document.getElementById('touchJump');
+    touchActionBtn = document.getElementById('touchAction');
     if(!tile || !canvas || !canvas.getContext) return;
     ctx = canvas.getContext('2d');
 
     try { record = parseInt(localStorage.getItem(RECORD_KEY), 10) || 0; } catch(e){ record = 0; }
 
+    var isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    if(instructionsEl){
+      instructionsEl.textContent = isTouch
+        ? 'TAP · saltar · doble tap · doble saltar'
+        : 'SPACE · saltar · doble SPACE · doble saltar';
+    }
+
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', function(){
+      var wasActive = (state === 'playing' || state === 'gameover');
+      resize();
+      if(wasActive){
+        state = 'idle';
+        resetWorld();
+        updateTouchUI();
+      }
+    });
     resetWorld();
 
     canvas.addEventListener('click', handleAction);
@@ -48,6 +74,39 @@
       if(inView) e.preventDefault();
       handleAction();
     });
+
+    if(touchJumpBtn){
+      touchJumpBtn.addEventListener('click', function(){
+        ensureSound();
+        if(state === 'playing') jump();
+      });
+    }
+    if(touchActionBtn){
+      touchActionBtn.addEventListener('click', function(){
+        ensureSound();
+        if(state === 'idle' || state === 'gameover'){ startGame(); }
+      });
+    }
+
+    var touchStartY = null, touchStartTime = 0;
+    canvas.addEventListener('touchstart', function(e){
+      if(e.touches.length === 1){
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }
+    }, { passive:true });
+    canvas.addEventListener('touchend', function(e){
+      if(touchStartY === null) return;
+      var dy = e.changedTouches[0].clientY - touchStartY;
+      var dt = Date.now() - touchStartTime;
+      touchStartY = null;
+      if(dy < -30 && dt < 400){
+        ensureSound();
+        handleAction();
+      }
+    });
+
+    updateTouchUI();
 
     window.addEventListener('comboi:play-debug-runner', function(){
       ensureSound();
@@ -76,16 +135,17 @@
     } catch(e){}
 
     idleJumpTimer = setInterval(function(){
-      if(state === 'idle' && player.vy === 0) player.vy = -11;
+      if(state === 'idle' && player.vy === 0) player.vy = -11 * Math.sqrt(SCALE);
     }, 3000);
   }
 
   function resize(){
+    SCALE = getScale();
     var rect = canvas.getBoundingClientRect();
     canvas.width = Math.max(1, Math.round(rect.width));
     canvas.height = Math.max(1, Math.round(rect.height));
     W = canvas.width; H = canvas.height;
-    groundY = H - GROUND_OFFSET;
+    groundY = H - GROUND_OFFSET * SCALE;
     if(player) player.y = Math.min(player.y, groundY - player.h);
   }
 
@@ -96,7 +156,8 @@
     spawnInterval = randRange(900, 2200);
     obstaclesSinceCollectible = 0;
     nextCollectibleAt = randInt(3, 5);
-    player = { x: 30, y: groundY - 14, w: 12, h: 14, vy: 0, jumps: 0, runFrame: 0, rotation: 0 };
+    var w = 12 * SCALE, h = 14 * SCALE;
+    player = { x: 30 * SCALE, y: groundY - h, w: w, h: h, vy: 0, jumps: 0, runFrame: 0, rotation: 0 };
     updateScoreUI();
   }
 
@@ -117,11 +178,27 @@
     if(rafId === null && (inView || !('IntersectionObserver' in window))){
       rafId = requestAnimationFrame(loop);
     }
+    updateTouchUI();
   }
 
   function jump(){
-    if(player.jumps === 0){ player.vy = -11; player.jumps = 1; playSound('jump'); }
-    else if(player.jumps === 1){ player.vy = -9; player.jumps = 2; playSound('jump'); }
+    var g = Math.sqrt(SCALE);
+    if(player.jumps === 0){ player.vy = -11 * g; player.jumps = 1; playSound('jump'); }
+    else if(player.jumps === 1){ player.vy = -9 * g; player.jumps = 2; playSound('jump'); }
+  }
+
+  function updateTouchUI(){
+    if(!touchActionBtn) return;
+    if(state === 'idle'){
+      touchActionBtn.textContent = '▶ JUGAR';
+      touchActionBtn.disabled = false;
+    } else if(state === 'playing'){
+      touchActionBtn.textContent = '▶ JUGAR';
+      touchActionBtn.disabled = true;
+    } else if(state === 'gameover'){
+      touchActionBtn.textContent = '↺ REINICIAR';
+      touchActionBtn.disabled = false;
+    }
   }
 
   /* ---- loop principal ---- */
@@ -155,7 +232,7 @@
   /* ---- idle ---- */
   function drawIdle(){
     if(player.vy !== 0 || player.y < groundY - player.h){
-      player.vy += 0.55;
+      player.vy += 0.55 * Math.sqrt(SCALE);
       player.y += player.vy;
       if(player.y >= groundY - player.h){
         player.y = groundY - player.h;
@@ -163,7 +240,7 @@
       }
     }
 
-    var bob = (player.vy === 0) ? Math.sin(frame * 0.08) * 2 : 0;
+    var bob = (player.vy === 0) ? Math.sin(frame * 0.08) * 2 * SCALE : 0;
     drawPlayer(player.x, player.y + bob, 0, 0);
 
     if(Math.floor(frame / 30) % 2 === 0){
@@ -181,7 +258,7 @@
   }
 
   function updatePlaying(){
-    player.vy += 0.55;
+    player.vy += 0.55 * Math.sqrt(SCALE);
     player.y += player.vy;
     if(player.y >= groundY - player.h){
       player.y = groundY - player.h;
@@ -205,7 +282,7 @@
       var o = obstacles[i];
       o.x -= o.speed * speed;
       if(o.type === 'scope'){
-        o.size = Math.min(28, o.size + 0.5);
+        o.size = Math.min(28 * SCALE, o.size + 0.5 * SCALE);
         o.w = o.size; o.h = o.size; o.y = groundY - o.size;
       }
       if(o.x + o.w < 0) obstacles.splice(i, 1);
@@ -213,7 +290,7 @@
 
     for(var j = collectibles.length - 1; j >= 0; j--){
       var c = collectibles[j];
-      c.x -= speed * 3.5;
+      c.x -= speed * 3.5 * SCALE;
       if(c.x + c.w < 0) collectibles.splice(j, 1);
     }
 
@@ -251,16 +328,17 @@
     var r = Math.random();
     var o = { x: W + 10 };
     if(r < 0.5){
-      o.type = 'bug'; o.w = 14; o.h = 14; o.y = groundY - 14; o.speed = 4; o.color = '#FF5F57';
+      o.type = 'bug'; o.w = 14 * SCALE; o.h = 14 * SCALE; o.y = groundY - o.h; o.speed = 4 * SCALE; o.color = '#FF5F57';
     } else if(r < 0.85){
-      o.type = 'legacy'; o.w = 10; o.h = 24; o.y = groundY - 24; o.speed = 3.5; o.color = '#FEBC2E';
+      o.type = 'legacy'; o.w = 10 * SCALE; o.h = 24 * SCALE; o.y = groundY - o.h; o.speed = 3.5 * SCALE; o.color = '#FEBC2E';
     } else {
-      o.type = 'scope'; o.size = 16; o.w = 16; o.h = 16; o.y = groundY - 16; o.speed = 3; o.color = '#CC3A2E';
+      o.size = 16 * SCALE; o.type = 'scope'; o.w = o.size; o.h = o.size; o.y = groundY - o.size; o.speed = 3 * SCALE; o.color = '#CC3A2E';
     }
     obstacles.push(o);
 
     if(obstaclesSinceCollectible >= nextCollectibleAt){
-      collectibles.push({ x: W + 30, y: H / 2 - 5, w: 10, h: 10 });
+      var cw = 10 * SCALE;
+      collectibles.push({ x: W + 30, y: H / 2 - cw / 2, w: cw, h: cw });
       obstaclesSinceCollectible = 0;
       nextCollectibleAt = randInt(3, 5);
     }
@@ -314,21 +392,23 @@
   /* ---- personaje (cursor de terminal con piernas) ---- */
   function drawPlayer(x, y, rotation, runFrame){
     ctx.save();
-    var cx = x + 6, cy = y + 7;
+    var w = player.w, h = player.h;
+    var cx = x + w / 2, cy = y + h / 2;
     ctx.translate(cx, cy);
     ctx.rotate((rotation || 0) * Math.PI / 180);
     ctx.translate(-cx, -cy);
 
     ctx.fillStyle = '#2B3CFF';
-    ctx.fillRect(x, y, 12, 14);
+    ctx.fillRect(x, y, w, h);
 
+    var legW = (w / 3), legH = (h / 14) * 6, legH2 = (h / 14) * 7, legH3 = (h / 14) * 5;
     var legPhase = Math.floor((runFrame || 0) / 8) % 2;
     if(legPhase === 0){
-      ctx.fillRect(x, y + 14, 4, 6);
-      ctx.fillRect(x + 8, y + 14, 4, 6);
+      ctx.fillRect(x, y + h, legW, legH);
+      ctx.fillRect(x + w - legW, y + h, legW, legH);
     } else {
-      ctx.fillRect(x + 1, y + 14, 4, 7);
-      ctx.fillRect(x + 7, y + 14, 4, 5);
+      ctx.fillRect(x + w / 12, y + h, legW, legH2);
+      ctx.fillRect(x + w - legW - w / 12, y + h, legW, legH3);
     }
     ctx.restore();
   }
@@ -341,10 +421,11 @@
       try { localStorage.setItem(RECORD_KEY, String(record)); } catch(e){}
     }
     playSound('gameover');
+    updateTouchUI();
   }
 
   function drawGameOver(){
-    drawPlayer(player.x, groundY - 6, 90, player.runFrame);
+    drawPlayer(player.x, groundY - 6 * SCALE, 90, player.runFrame);
 
     ctx.textAlign = 'center';
     ctx.font = "13px 'Space Mono', monospace";

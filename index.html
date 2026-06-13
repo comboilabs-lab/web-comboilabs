@@ -144,6 +144,19 @@ body.js .tile.term .t-line.show{opacity:1}
   font-family:'Space Mono',monospace;font-size:10px;color:#6B7390;text-align:center;padding:8px 0;
 }
 
+/* — controles táctiles del Debug Runner — */
+.game-touch-controls{display:none;gap:8px;padding:0 10px 10px}
+.touch-btn{
+  flex:1;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;
+  background:#1B2030;color:#C8CDFF;border:1px solid #2B3CFF;border-radius:6px;
+  padding:12px;min-height:44px;text-align:center;cursor:pointer;transition:background .15s,color .15s;
+}
+.touch-btn:active{background:#2B3CFF;color:#fff}
+.touch-btn:disabled{opacity:.4;cursor:default}
+@media (hover:none) and (pointer:coarse){
+  .game-touch-controls{display:flex}
+}
+
 @media (max-width:920px){
   .bento{grid-template-columns:1fr 1fr}
   .tile.dark{grid-row:auto;grid-column:span 2}
@@ -152,7 +165,10 @@ body.js .tile.term .t-line.show{opacity:1}
 @media (max-width:640px){
   .bento{grid-template-columns:1fr}
   .tile.dark,.tile.term,.tile.game{grid-column:auto}
-  #gameCanvas{height:100px}
+  #gameCanvas{height:90px}
+  .term-body{font-size:10px}
+  .tile.game .term-bar{flex-wrap:wrap;row-gap:6px}
+  .interactive-badge,.gr-score{margin-left:0}
 }
 </style>
 </head>
@@ -235,7 +251,11 @@ body.js .tile.term .t-line.show{opacity:1}
           <span class="gr-score" id="grScore">SCORE: 0</span>
         </div>
         <canvas id="gameCanvas"></canvas>
-        <div class="gr-instructions">SPACE · saltar · doble salto</div>
+        <div class="gr-instructions" id="grInstructions">SPACE · saltar · doble salto</div>
+        <div class="game-touch-controls">
+          <button class="touch-btn" id="touchJump">⬆ SALTAR</button>
+          <button class="touch-btn" id="touchAction">▶ JUGAR</button>
+        </div>
       </div>
     </div>
   </div>

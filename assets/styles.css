@@ -616,9 +616,36 @@ body.comboi-mode .svc,body.comboi-mode .dcard,body.comboi-mode .step,body.comboi
   header.site[data-header="terminal"] .nav-links{background:var(--tile-dark);border-color:#3A352F}
   .nav-links.open{display:flex}
   header.site[data-header="tabs"] .nav-links{align-self:auto}
-  .menu-toggle{display:block}
+  .menu-toggle{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;font-size:22px}
   .steps{grid-template-columns:1fr}
-  .cta-band{padding:52px 24px}
+  .cta-band{padding:40px 20px}
   section{padding:64px 0}
   .hdr-switch{right:10px;bottom:10px}
+
+  /* tipografía hero */
+  h1{font-size:clamp(26px,7vw,62px)}
+  .term-line{font-size:11px}
+
+  /* CTAs en columna a ancho completo */
+  .hero-ctas,.page-hero .hero-ctas{flex-direction:column;align-items:stretch}
+  .hero-ctas .btn,.page-hero .hero-ctas .btn{width:100%;justify-content:center;text-align:center}
+
+  /* tarjetas de servicio / entregables */
+  .svc{padding:20px}
+
+  /* git log / proceso: evitar overflow de hashes largos */
+  .gitlog .hash,.step .num{word-break:break-all}
+
+  /* proyectos */
+  .proj{min-height:160px;padding:20px 20px 24px}
+
+  /* CTA band: botón a ancho completo, email debajo centrado */
+  .cta-band .btn{width:100%;justify-content:center}
+  .cta-band .mail{text-align:center}
+
+  /* footer: columna y statusbar reducida */
+  .foot{flex-direction:column;align-items:flex-start}
+  .statusbar .wrap span:nth-child(2),
+  .statusbar .wrap span:nth-child(3),
+  .statusbar .wrap span:nth-child(5){display:none}
 }
