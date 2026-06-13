@@ -8,6 +8,7 @@
   var cssArea = document.getElementById('code-css');
   var iframe = document.getElementById('livePreview');
   var statusEl = document.querySelector('.editor-status');
+  var hintEl = document.getElementById('editorHint');
   if(!htmlArea || !cssArea || !iframe) return;
 
   var INITIAL_HTML =
@@ -94,10 +95,13 @@
     var paneId = pair[1];
 
     textarea.addEventListener('input', function(){
-      if(firstInput && statusEl){
+      if(firstInput){
         firstInput = false;
-        statusEl.textContent = '● editando...';
-        setTimeout(function(){ statusEl.textContent = '● live'; }, 1000);
+        if(hintEl) hintEl.classList.add('hidden');
+        if(statusEl){
+          statusEl.textContent = '● editando...';
+          setTimeout(function(){ statusEl.textContent = '● live'; }, 1000);
+        }
       }
       updateLineNumbers(paneId);
       clearTimeout(debounceTimer);
