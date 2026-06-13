@@ -34,6 +34,155 @@
   ]
 }
 </script>
+<style>
+/* — simulador de app móvil (hero) — */
+.hero-split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.hero-copy{min-width:0}
+@media (min-width:1025px){
+  .hero-copy h1{font-size:clamp(32px,4.2vw,50px);max-width:none}
+}
+
+.phone-sim{
+  display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;
+}
+
+.phone-shell{
+  width:240px;background:#10131A;border-radius:36px;padding:14px 10px;
+  box-shadow:0 0 0 1.5px #2B3CFF,0 32px 80px rgba(16,19,26,.35),inset 0 0 0 1px #232838;
+  position:relative;
+}
+
+.phone-notch{
+  width:80px;height:20px;background:#10131A;border-radius:0 0 14px 14px;
+  margin:0 auto 6px;display:flex;align-items:center;justify-content:center;
+}
+.notch-cam{width:8px;height:8px;border-radius:50%;background:#1B2030;border:1.5px solid #2B3CFF}
+
+.phone-screen-wrap{
+  background:#F4F5F7;border-radius:20px;overflow:hidden;height:420px;
+  display:flex;flex-direction:column;position:relative;
+}
+
+.status-bar{
+  background:#10131A;color:#C8CDFF;font-family:'Space Mono',monospace;font-size:9px;
+  padding:5px 12px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;
+}
+.status-icons{display:flex;gap:6px}
+
+.screens-container{flex:1;position:relative;overflow:hidden}
+
+.sim-screen{
+  position:absolute;inset:0;background:#F8F9FB;display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;overflow-y:auto;
+}
+.sim-screen.active{opacity:1;pointer-events:all}
+
+.app-header{
+  background:#2B3CFF;color:#fff;padding:10px 12px;display:flex;
+  align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.app-title{font-weight:600;font-size:14px}
+.back-btn{background:none;border:none;color:#fff;font-size:12px;cursor:pointer;padding:0;font-family:inherit}
+.notif-badge{
+  background:#FF5F57;color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+}
+
+.search-bar{margin:8px 10px;background:#fff;border:1px solid #E2E4EA;border-radius:8px;padding:7px 10px;font-size:11px;color:#9AA0AE}
+
+.tab-row{display:flex;gap:0;padding:0 10px;margin-bottom:6px}
+.tab{font-size:10px;padding:5px 10px;color:#9AA0AE;border-bottom:2px solid transparent;cursor:pointer}
+.tab.active{color:#2B3CFF;border-bottom-color:#2B3CFF;font-weight:600}
+
+.order-list{padding:0 10px;display:flex;flex-direction:column;gap:6px}
+.order-item{
+  background:#fff;border-radius:10px;padding:10px;display:flex;justify-content:space-between;
+  align-items:center;cursor:pointer;transition:transform .1s;border:1px solid #E2E4EA;
+}
+.order-item:active{transform:scale(.98)}
+.order-info{display:flex;flex-direction:column;gap:2px}
+.order-id{font-size:10px;color:#9AA0AE;font-family:'Space Mono',monospace}
+.order-name{font-size:12px;font-weight:600;color:#10131A}
+.order-sub{font-size:10px;color:#9AA0AE}
+.order-status{font-size:9px;padding:3px 7px;border-radius:10px;font-weight:600;white-space:nowrap}
+.order-status.pending{background:#FFF3CD;color:#856404}
+.order-status.inprogress{background:#E8EAFF;color:#2B3CFF}
+.order-status.done{background:#DDF7EC;color:#0B7A52}
+
+.detail-hero{padding:12px 12px 4px;display:flex;align-items:center;gap:8px}
+.detail-id{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:#10131A}
+.detail-client{padding:0 12px;font-size:14px;font-weight:600;color:#10131A}
+.detail-address{padding:2px 12px 10px;font-size:11px;color:#9AA0AE}
+.detail-items{margin:0 10px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #E2E4EA}
+.detail-row{display:flex;justify-content:space-between;padding:8px 10px;font-size:11px;color:#10131A;border-bottom:1px solid #F0F1F5}
+.detail-row:last-child{border-bottom:none}
+
+.action-btn{
+  margin:10px;background:#2B3CFF;color:#fff;border:none;border-radius:8px;padding:11px;
+  font-size:12px;font-weight:600;cursor:pointer;width:calc(100% - 20px);transition:opacity .15s;font-family:inherit;
+}
+.action-btn:active{opacity:.8}
+.action-btn.secondary{background:#fff;color:#2B3CFF;border:1.5px solid #2B3CFF}
+
+.confirm-wrap{display:flex;flex-direction:column;align-items:center;padding:24px 12px 12px;gap:6px}
+.confirm-icon{
+  width:48px;height:48px;background:#DDF7EC;color:#0B7A52;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;
+}
+.confirm-title{font-size:15px;font-weight:700;color:#10131A}
+.confirm-sub{font-size:11px;color:#9AA0AE;text-align:center}
+.eta-card{
+  margin:0 10px;background:#fff;border:1px solid #E2E4EA;border-radius:10px;padding:10px 14px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.eta-label{font-size:11px;color:#9AA0AE}
+.eta-time{font-size:13px;font-weight:700;color:#10131A;font-family:'Space Mono',monospace}
+
+.map-placeholder{margin:10px;background:#E8EBF0;border-radius:12px;height:180px;position:relative;overflow:hidden}
+.map-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(#D0D4DC 1px,transparent 1px),linear-gradient(90deg,#D0D4DC 1px,transparent 1px);
+  background-size:24px 24px;
+}
+.map-route{
+  position:absolute;top:50%;left:20%;right:20%;height:3px;background:#2B3CFF;
+  border-radius:2px;transform:translateY(-50%) rotate(-8deg);
+}
+.map-pin{position:absolute;font-size:20px;transform:translate(-50%,-50%)}
+.map-pin.origin{top:55%;left:22%}
+.map-pin.dest{top:45%;left:78%}
+.map-info{padding:0 10px 10px;display:flex;flex-direction:column;font-size:12px;color:#5A6172;text-align:center}
+
+.bottom-nav{background:#fff;border-top:1px solid #E2E4EA;display:flex;flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:7px 0;gap:2px;font-size:9px;color:#9AA0AE;cursor:pointer}
+.nav-item.active{color:#2B3CFF}
+.nav-icon{font-size:16px}
+
+.phone-home-btn{width:60px;height:4px;background:#2B3CFF;border-radius:2px;margin:10px auto 0;opacity:.5}
+
+.push-notif{
+  position:absolute;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);width:220px;
+  background:rgba(16,19,26,.92);backdrop-filter:blur(8px);border-radius:14px;padding:10px 12px;
+  display:flex;gap:8px;align-items:flex-start;border:1px solid #2B3CFF;cursor:pointer;
+  transition:transform .4s cubic-bezier(.2,.8,.2,1);z-index:10;
+}
+.push-notif.show{transform:translateX(-50%) translateY(0)}
+.push-icon{font-size:20px;flex-shrink:0}
+.push-content{display:flex;flex-direction:column;gap:2px}
+.push-app{font-family:'Space Mono',monospace;font-size:9px;color:#6B7390}
+.push-title{font-size:11px;font-weight:700;color:#fff}
+.push-body{font-size:10px;color:#9AA0AE}
+
+.sim-hint{font-family:'Space Mono',monospace;font-size:11px;color:#5BE0B3;letter-spacing:1px;transition:opacity .4s}
+.sim-hint.hidden{opacity:0;pointer-events:none}
+
+@media (max-width:1024px){
+  .hero-split{grid-template-columns:1fr;gap:32px}
+}
+@media (max-width:640px){
+  .phone-shell{transform:scale(.85);transform-origin:top center}
+}
+</style>
 </head>
 <body data-page="servicio">
 
@@ -45,12 +194,163 @@
     <a href="index.html">~</a><span class="sep">/</span><a href="servicios.html">servicios</a><span class="sep">/</span><span class="here">apps-moviles</span>
   </nav>
   <div class="page-hero" data-screen-label="Servicio: Apps móviles">
-    <span class="eyebrow reveal">~/servicios $ cat apps-moviles.md</span>
-    <h1 class="reveal">Apps móviles<br><span class="hl">iOS y Android.</span></h1>
-    <p class="sub reveal">Una sola base de código, dos tiendas. Apps rápidas de lanzar y fáciles de mantener, con experiencia nativa y todo lo que el móvil hace bien: notificaciones, cámara, GPS.</p>
-    <div class="hero-ctas reveal">
-      <a href="contacto.html" class="btn">Cuéntanos tu proyecto →</a>
-      <a href="#faq" class="btn ghost">Ver preguntas frecuentes</a>
+    <div class="hero-split">
+      <div class="hero-copy">
+        <span class="eyebrow reveal">~/servicios $ cat apps-moviles.md</span>
+        <h1 class="reveal">Apps móviles<br><span class="hl">iOS y Android.</span></h1>
+        <p class="sub reveal">Una sola base de código, dos tiendas. Apps rápidas de lanzar y fáciles de mantener, con experiencia nativa y todo lo que el móvil hace bien: notificaciones, cámara, GPS.</p>
+        <div class="hero-ctas reveal">
+          <a href="contacto.html" class="btn">Cuéntanos tu proyecto →</a>
+          <a href="#faq" class="btn ghost">Ver preguntas frecuentes</a>
+        </div>
+      </div>
+
+      <div class="phone-sim reveal" role="region" aria-label="Simulador de app móvil interactiva">
+
+        <div class="phone-shell">
+
+          <div class="phone-notch" aria-hidden="true">
+            <span class="notch-cam"></span>
+          </div>
+
+          <div class="phone-screen-wrap">
+
+            <div class="status-bar" aria-hidden="true">
+              <span class="status-time" id="simTime">09:41</span>
+              <span class="status-icons">
+                <span class="sig">▪▪▪</span>
+                <span class="wifi">WiFi</span>
+                <span class="bat">█████</span>
+              </span>
+            </div>
+
+            <div class="screens-container" id="screensContainer">
+
+              <div class="sim-screen active" id="screen-1" data-screen="1">
+                <div class="app-header">
+                  <span class="app-title">Pedidos</span>
+                  <span class="notif-badge" id="notifBadge">3</span>
+                </div>
+                <div class="search-bar">🔍 Buscar pedido...</div>
+                <div class="tab-row">
+                  <span class="tab active">Pendientes</span>
+                  <span class="tab">En curso</span>
+                  <span class="tab">Entregados</span>
+                </div>
+                <div class="order-list">
+                  <div class="order-item" data-to="2">
+                    <div class="order-info">
+                      <span class="order-id">#1042</span>
+                      <span class="order-name">Ferretería López</span>
+                      <span class="order-sub">3 artículos · hace 12 min</span>
+                    </div>
+                    <span class="order-status pending">Pendiente</span>
+                  </div>
+                  <div class="order-item" data-to="2">
+                    <div class="order-info">
+                      <span class="order-id">#1041</span>
+                      <span class="order-name">Obra Benissa C/Mar</span>
+                      <span class="order-sub">7 artículos · hace 38 min</span>
+                    </div>
+                    <span class="order-status pending">Pendiente</span>
+                  </div>
+                  <div class="order-item" data-to="2">
+                    <div class="order-info">
+                      <span class="order-id">#1040</span>
+                      <span class="order-name">Clínica Dénia</span>
+                      <span class="order-sub">1 artículo · hace 1h</span>
+                    </div>
+                    <span class="order-status inprogress">En curso</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sim-screen" id="screen-2" data-screen="2">
+                <div class="app-header">
+                  <button class="back-btn" data-to="1">← Pedidos</button>
+                </div>
+                <div class="detail-hero">
+                  <span class="detail-id">#1042</span>
+                  <span class="order-status pending" style="font-size:12px">Pendiente</span>
+                </div>
+                <div class="detail-client">Ferretería López</div>
+                <div class="detail-address">C/ Mayor 14, Benissa</div>
+                <div class="detail-items">
+                  <div class="detail-row"><span>Tornillos M6 ×50</span><span>×12</span></div>
+                  <div class="detail-row"><span>Taladro percutor</span><span>×1</span></div>
+                  <div class="detail-row"><span>Guantes protección</span><span>×2</span></div>
+                </div>
+                <button class="action-btn" data-to="3">Marcar en curso →</button>
+              </div>
+
+              <div class="sim-screen" id="screen-3" data-screen="3">
+                <div class="app-header">
+                  <button class="back-btn" data-to="2">← #1042</button>
+                </div>
+                <div class="confirm-wrap">
+                  <div class="confirm-icon">✓</div>
+                  <div class="confirm-title">Estado actualizado</div>
+                  <div class="confirm-sub">El pedido #1042 está ahora en curso</div>
+                </div>
+                <div class="eta-card">
+                  <span class="eta-label">Entrega estimada</span>
+                  <span class="eta-time">14:30 — 15:00</span>
+                </div>
+                <button class="action-btn secondary" data-to="4">Ver mapa →</button>
+              </div>
+
+              <div class="sim-screen" id="screen-4" data-screen="4">
+                <div class="app-header">
+                  <button class="back-btn" data-to="3">← Estado</button>
+                  <span class="app-title" style="font-size:13px">Ruta</span>
+                </div>
+                <div class="map-placeholder" aria-label="Mapa esquemático">
+                  <div class="map-grid"></div>
+                  <div class="map-route"></div>
+                  <div class="map-pin origin">🏪</div>
+                  <div class="map-pin dest">📦</div>
+                </div>
+                <div class="map-info">
+                  <span>3.2 km · ~8 min</span>
+                  <button class="action-btn" style="margin-top:8px" data-to="1">← Volver al inicio</button>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="bottom-nav" aria-hidden="true">
+              <div class="nav-item active">
+                <span class="nav-icon">📦</span>
+                <span>Pedidos</span>
+              </div>
+              <div class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span>Stats</span>
+              </div>
+              <div class="nav-item">
+                <span class="nav-icon">👤</span>
+                <span>Perfil</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="phone-home-btn" aria-hidden="true"></div>
+
+        </div>
+
+        <div class="push-notif" id="pushNotif" role="alert" aria-live="assertive">
+          <div class="push-icon">📦</div>
+          <div class="push-content">
+            <span class="push-app">Pedidos · ahora</span>
+            <span class="push-title">Nuevo pedido recibido</span>
+            <span class="push-body">#1043 · Supermercado Pla · 5 artículos</span>
+          </div>
+        </div>
+
+        <div class="sim-hint" id="simHint" aria-hidden="true">toca para navegar →</div>
+
+      </div>
     </div>
   </div>
 </div>
@@ -175,5 +475,6 @@
 
 <script src="assets/terminal-easter-egg.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/phone-sim.js"></script>
 </body>
 </html>
