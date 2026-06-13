@@ -9,6 +9,22 @@
   var page = document.body.dataset.page || 'home';
   document.body.classList.add('js');
 
+  // TODO: mover a proxy FastAPI antes de producción en Hetzner
+  // endpoint destino: POST /api/chat en el servidor
+  var ANTHROPIC_API_KEY = "sk-ant-XXXXXXXXXX"; // sustituir por la key real
+
+  var CHAT_SYSTEM_PROMPT = "Eres el agente de demostración de Comboi Labs, una empresa de desarrollo de software de Benissa (Alicante). Estás integrado en la home de su web para demostrar cómo funciona un agente de IA real.\n\n"
+    + "Responde siempre en español, de forma breve (máximo 2-3 frases), directa y con un tono cercano pero profesional. Sin emojis en exceso.\n\n"
+    + "Puedes responder sobre:\n"
+    + "- Qué hace Comboi Labs (desarrollo web a medida, apps móviles, agentes de IA)\n"
+    + "- Cómo funciona un agente de IA\n"
+    + "- Precios orientativos (siempre \"depende del proyecto, en una llamada lo vemos\")\n"
+    + "- Cómo contactar (hola@comboilabs.com o el formulario de contacto)\n\n"
+    + "Si te preguntan algo fuera de ese ámbito, redirige con gracia hacia Comboi Labs.\n"
+    + "Al final de cada respuesta, si tiene sentido, añade una pregunta de seguimiento corta.";
+
+  var chatLive = false; // pasa a true cuando el visitante usa el chat real del bento
+
   /* ---- Navegación (una sola fuente de verdad) ---- */
   var NAV = [
     { key:'servicios', label:'Servicios', file:'servicios', ext:'.tsx', href:'servicios.html' },
@@ -179,7 +195,6 @@
     if(!bento) return;
 
     bento.querySelectorAll('.tile').forEach(function(t){
-      t.classList.add('reveal');
       onInView(t, function(){ t.classList.add('in'); });
     });
 
@@ -222,16 +237,18 @@
     var chatTile = bento.querySelector('.tile.chat');
     if(typing && reply && them && chatTile){
       function chatLoop(){
+        if(chatLive) return;
         them.classList.add('show');
         typing.classList.remove('show');
         reply.classList.remove('show');
-        setTimeout(function(){ typing.classList.add('show'); }, 900);
+        setTimeout(function(){ if(!chatLive) typing.classList.add('show'); }, 900);
         setTimeout(function(){
+          if(chatLive) return;
           typing.classList.remove('show');
           typing.style.display = 'none';
           reply.classList.add('show');
         }, 2400);
-        setTimeout(function(){ typing.style.display = ''; chatLoop(); }, 6500);
+        setTimeout(function(){ if(!chatLive){ typing.style.display = ''; chatLoop(); } }, 6500);
       }
       if(reduced){
         them.classList.add('show'); reply.classList.add('show'); typing.style.display = 'none';
@@ -239,6 +256,136 @@
         onInView(chatTile, chatLoop);
       }
     }
+  }
+
+  /* ---- Chat real del bento (demo con la API de Claude) ---- */
+  function wireBentoChat(){
+    var chatTile = document.querySelector('.tile.chat');
+    var chatDemo = document.getElementById('chatDemo');
+    var input = document.getElementById('chatInput');
+    var send = document.getElementById('chatSend');
+    if(!chatTile || !chatDemo || !input || !send) return;
+
+    var conversationHistory = [];
+
+    function addBubble(text, who){
+      var b = document.createElement('div');
+      b.className = 'bubble ' + who;
+      b.textContent = text;
+      chatDemo.appendChild(b);
+      requestAnimationFrame(function(){ b.classList.add('show'); });
+      enforceMaxBubbles();
+      return b;
+    }
+
+    function enforceMaxBubbles(){
+      var bubbles = Array.prototype.slice.call(chatDemo.querySelectorAll('.bubble'));
+      var excess = bubbles.length - 6;
+      for(var i = 0; i < excess; i++){
+        (function(old){
+          old.classList.add('fade-out');
+          setTimeout(function(){ old.remove(); }, 300);
+        })(bubbles[i]);
+      }
+    }
+
+    function streamReply(bubble, text){
+      var i = 0;
+      var timer = setInterval(function(){
+        i++;
+        bubble.textContent = text.slice(0, i);
+        if(i >= text.length) clearInterval(timer);
+      }, 20);
+    }
+
+    function sendMessage(){
+      var text = input.value.trim();
+      if(!text) return;
+
+      if(!chatLive){
+        chatLive = true;
+        chatDemo.querySelectorAll('.bubble').forEach(function(b){ b.remove(); });
+      }
+
+      addBubble(text, 'us');
+      conversationHistory.push({ role: 'user', content: text });
+      if(conversationHistory.length > 6) conversationHistory = conversationHistory.slice(-6);
+
+      input.value = '';
+      input.disabled = true;
+      send.disabled = true;
+
+      var typingBubble = addBubble('', 'them');
+      typingBubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+
+      fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: CHAT_SYSTEM_PROMPT,
+          messages: conversationHistory
+        })
+      }).then(function(res){
+        if(!res.ok) throw new Error('http ' + res.status);
+        return res.json();
+      }).then(function(data){
+        var text = (data.content && data.content[0] && data.content[0].text) || '';
+        conversationHistory.push({ role: 'assistant', content: text });
+        if(conversationHistory.length > 6) conversationHistory = conversationHistory.slice(-6);
+        typingBubble.innerHTML = '';
+        streamReply(typingBubble, text);
+      }).catch(function(){
+        typingBubble.remove();
+        addBubble('// error de conexión · reintenta', 'them error');
+      }).then(function(){
+        input.disabled = false;
+        send.disabled = false;
+        input.focus();
+      });
+    }
+
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter') sendMessage();
+    });
+  }
+
+  /* ---- Micro-animaciones v2: entrada específica por sección ---- */
+  function wireMicroAnimations(){
+    if(reduced) return;
+    var els = document.querySelectorAll('.svc, .step, .tile, .tag, .proj');
+    if(!els.length) return;
+
+    document.querySelectorAll('.tags').forEach(function(group){
+      group.querySelectorAll('.tag').forEach(function(tag, i){
+        tag.style.setProperty('--ma-i', i);
+      });
+    });
+
+    els.forEach(function(el){ el.classList.add('ma'); });
+
+    if(!('IntersectionObserver' in window)){
+      els.forEach(function(el){ el.classList.add('ma-in'); });
+      return;
+    }
+
+    var io = new IntersectionObserver(function(entries, obs){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          entry.target.classList.add('ma-in');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    els.forEach(function(el){ io.observe(el); });
   }
 
   /* ---- Glow de cursor en tarjetas (.svc, .dcard, .step) ---- */
@@ -298,7 +445,9 @@
   renderSwitch();
   wireHeroTyping();
   wireBento();
+  wireBentoChat();
   wireReveal();
+  wireMicroAnimations();
   wireCardGlow();
   wireHeroParallax();
   wireEasterEggs();

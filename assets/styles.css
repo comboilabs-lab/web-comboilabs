@@ -365,9 +365,10 @@ header.site[data-header="terminal"]::after{
 }
 .faq details[open]{border-color:var(--cobalt);box-shadow:0 12px 30px rgba(16,19,26,.06)}
 .faq summary{
-  list-style:none;cursor:pointer;padding:20px 0;
+  list-style:none;cursor:pointer;padding:20px 0;min-height:44px;
   display:flex;align-items:center;gap:14px;
-  font-weight:600;font-size:17px;
+  font-family:'Space Mono',monospace;font-weight:700;font-size:15px;
+  border-bottom:1px solid transparent;transition:border-color .2s;
 }
 .faq summary::-webkit-details-marker{display:none}
 .faq summary .q{
@@ -375,7 +376,13 @@ header.site[data-header="terminal"]::after{
 }
 .faq summary .tg{margin-left:auto;color:var(--ink-3);font-family:'Space Mono',monospace;transition:transform .25s}
 .faq details[open] summary .tg{transform:rotate(45deg);color:var(--cobalt)}
-.faq .ans{padding:0 0 22px 34px;color:var(--ink-2);font-size:15px;line-height:1.6}
+.faq details[open] summary{border-bottom-color:var(--line)}
+.faq .ans{
+  display:block;overflow:hidden;max-height:0;
+  padding:0 0 0 34px;color:var(--ink-2);font-size:15px;line-height:1.6;
+  transition:max-height .35s ease,padding .35s ease;
+}
+.faq details[open] .ans{max-height:600px;padding:0 0 22px 34px}
 .faq .ans p{margin-bottom:12px}
 .faq .ans p:last-child{margin-bottom:0}
 
@@ -552,6 +559,41 @@ body.comboi-mode .svc,body.comboi-mode .dcard,body.comboi-mode .step,body.comboi
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   .caret,.head-caret{display:none!important}
+}
+
+/* micro-animaciones v2 */
+@media (prefers-reduced-motion:no-preference){
+  .svc.ma,.step.ma,.tile.ma,.tag.ma,.proj.ma{opacity:0}
+
+  /* tarjetas de servicio: entrada escalonada desde abajo */
+  .svc.ma{transform:translateY(32px);transition:opacity .6s ease,transform .6s ease}
+  .services>.svc.ma:nth-child(1){transition-delay:0ms}
+  .services>.svc.ma:nth-child(2){transition-delay:120ms}
+  .services>.svc.ma:nth-child(3){transition-delay:240ms}
+
+  /* pasos del proceso / git log: el hash parpadea, luego título y descripción */
+  .step.ma .num{opacity:0}
+  .step.ma h3,.step.ma p{opacity:0;transform:translateY(8px);transition:opacity .4s ease .2s,transform .4s ease .2s}
+  .step.ma-in{opacity:1}
+  .step.ma-in .num{opacity:1;animation:maNumBlink .12s steps(1) 5}
+  .step.ma-in h3,.step.ma-in p{opacity:1;transform:translateY(0)}
+  @keyframes maNumBlink{0%,100%{opacity:1}50%{opacity:.15}}
+
+  /* tiles del bento: cada uno entra desde su propia dirección */
+  .tile.ma{transition:opacity .6s ease,transform .6s ease,filter .6s ease}
+  .tile.ma.dark{transform:translateX(-24px)}
+  .tile.ma.chat{transform:translateY(-20px)}
+  .tile.ma.mintbg{transform:translateX(24px)}
+  .tile.ma.term{transform:translateY(24px);transition-delay:120ms}
+  .tile.ma.game{transform:scale(.97);filter:blur(4px);transition-delay:200ms}
+
+  /* etiquetas del stack: entrada de izquierda a derecha */
+  .tag.ma{transform:scale(.92);transition:opacity .35s ease,transform .35s ease;transition-delay:calc(var(--ma-i,0) * 60ms)}
+
+  /* tarjetas de proyectos: efecto de materialización */
+  .proj.ma{transform:scale(.97);filter:blur(4px);transition:opacity .5s ease,transform .5s ease,filter .5s ease}
+
+  .svc.ma-in,.tile.ma-in,.tag.ma-in,.proj.ma-in{opacity:1;transform:none;filter:blur(0)}
 }
 
 /* ---------- Responsive ---------- */

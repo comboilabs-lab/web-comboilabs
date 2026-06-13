@@ -62,8 +62,6 @@
 .bar.peak{background:var(--mint);animation:breathe 2.4s ease-in-out infinite}
 @keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.06)}}
 .tile.in .bar{transform:scaleY(1)}
-.chart-labels{display:flex;gap:6px;margin-top:8px}
-.chart-labels span{flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:9px;color:var(--ink-3)}
 .tile.chat{background:var(--surface);border:1px solid var(--line)}
 .tile.chat .tile-label{color:var(--ink-3)}
 .bubble{font-size:13px;line-height:1.45;border-radius:12px;padding:9px 13px;max-width:88%;margin-bottom:9px}
@@ -75,6 +73,24 @@ body.js .tile.chat .bubble.show{opacity:1}
 .typing i{width:6px;height:6px;border-radius:50%;background:#fff;opacity:.5;animation:blink 1s infinite}
 .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+.bubble.them .typing i{background:var(--ink-2)}
+.bubble.fade-out{opacity:0!important;transform:translateY(-10px);transition:opacity .3s,transform .3s}
+.bubble.error{background:transparent;color:#FF5F57;font-family:'Space Mono',monospace;font-size:12px;padding:4px 0}
+.dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mint);vertical-align:middle;margin-left:2px}
+.chat-input-row{
+  display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #232838;
+}
+.chat-input{
+  flex:1;background:#1B2030;border:1px solid #2B3CFF;border-radius:6px;
+  padding:8px 12px;color:#C8CDFF;font-family:'Space Mono',monospace;font-size:12px;outline:none;
+}
+.chat-input::placeholder{color:#6B7390}
+.chat-send{
+  background:#2B3CFF;color:#fff;border:none;border-radius:6px;padding:8px 14px;
+  font-family:'Space Mono',monospace;font-size:12px;cursor:pointer;transition:opacity .2s;
+}
+.chat-send:hover{opacity:.85}
+.chat-send:disabled{opacity:.4;cursor:default}
 .tile.mintbg{background:var(--cobalt-soft)}.tile.mintbg .tile-label{color:var(--mint-deep)}
 .phone{width:104px;margin:4px auto 0;background:var(--tile-dark);border-radius:16px;padding:9px;box-shadow:0 12px 30px rgba(217,119,87,.22);position:relative}
 .phone .notch{width:34%;height:13px;background:var(--tile-dark-2);border-radius:0 0 8px 8px;margin:0 auto 8px}
@@ -105,13 +121,28 @@ body.js .tile.term .t-line.show{opacity:1}
 .blink{animation:pulse 1.4s infinite}
 .stack{margin-top:72px}
 .proc-band{margin-top:0}
+
+/* — tile del Debug Runner — */
+.tile.game{
+  grid-column:span 3;background:var(--tile-dark);border:1.5px solid #2B3CFF;
+  padding:0;overflow:hidden;position:relative;
+}
+.tile.game .term-bar{border-bottom:1px solid #232838}
+.gr-score{margin-left:auto;font-family:'Space Mono',monospace;font-size:11px;color:var(--mint);letter-spacing:1px}
+#gameCanvas{display:block;width:100%;height:120px;background:#0A0D14}
+.gr-instructions{
+  font-family:'Space Mono',monospace;font-size:10px;color:#6B7390;text-align:center;padding:8px 0;
+}
+
 @media (max-width:920px){
   .bento{grid-template-columns:1fr 1fr}
   .tile.dark{grid-row:auto;grid-column:span 2}
+  .tile.game{grid-column:span 2}
 }
 @media (max-width:640px){
   .bento{grid-template-columns:1fr}
-  .tile.dark,.tile.term{grid-column:auto}
+  .tile.dark,.tile.term,.tile.game{grid-column:auto}
+  #gameCanvas{height:100px}
 }
 </style>
 </head>
@@ -146,15 +177,18 @@ body.js .tile.term .t-line.show{opacity:1}
           <div class="bar" style="height:58%;transition-delay:.40s"></div>
           <div class="bar" style="height:78%;transition-delay:.47s"></div>
         </div>
-        <div class="chart-labels" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
       </div>
 
       <div class="tile chat">
-        <span class="tile-label">Agente de citas · WhatsApp</span>
+        <span class="tile-label">Agente de IA · demo en vivo <span class="dot-live blink" aria-hidden="true"></span></span>
         <div id="chatDemo">
           <div class="bubble them">Hola, ¿tenéis hueco el jueves por la tarde?</div>
           <div class="bubble us" id="bubbleTyping"><span class="typing"><i></i><i></i><i></i></span></div>
           <div class="bubble us" id="bubbleReply">¡Sí! Tengo 16:30 o 18:00. ¿Cuál te va mejor? ✓</div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" class="chat-input" id="chatInput" placeholder="escribe algo..." autocomplete="off">
+          <button type="button" class="chat-send" id="chatSend">→</button>
         </div>
       </div>
 
@@ -181,6 +215,16 @@ body.js .tile.term .t-line.show{opacity:1}
           <div class="t-line"><span class="t-prompt">$</span> deploy --prod</div>
           <div class="t-line"><span class="t-ok blink">● LIVE</span> <span class="t-dim">en producción · 34s</span></div>
         </div>
+      </div>
+
+      <div class="tile game">
+        <div class="term-bar" aria-hidden="true">
+          <i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i>
+          <span class="term-title">debug_runner.exe</span>
+          <span class="gr-score" id="grScore">SCORE: 0</span>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div class="gr-instructions">SPACE · saltar · doble salto</div>
       </div>
     </div>
   </div>
@@ -210,7 +254,7 @@ body.js .tile.term .t-line.show{opacity:1}
       <p>Cada proyecto empieza por entender tu negocio. Después elegimos la herramienta adecuada, no la que está de moda.</p>
     </div>
     <div class="services">
-      <article class="svc featured reveal">
+      <article class="svc featured">
         <span class="num">&lt;desarrollo_web /&gt;</span>
         <h3>Desarrollo web a medida</h3>
         <p>Aplicaciones web y paneles de gestión que se adaptan a cómo trabaja tu equipo, no al revés.</p>
@@ -221,7 +265,7 @@ body.js .tile.term .t-line.show{opacity:1}
         </ul>
         <a href="servicio-desarrollo-web.html" class="link">leer_más() →</a>
       </article>
-      <article class="svc reveal">
+      <article class="svc">
         <span class="num">&lt;apps_moviles /&gt;</span>
         <h3>Apps móviles</h3>
         <p>Aplicaciones para iOS y Android con una sola base de código. Rápidas de lanzar, fáciles de mantener.</p>
@@ -232,7 +276,7 @@ body.js .tile.term .t-line.show{opacity:1}
         </ul>
         <a href="servicio-apps-moviles.html" class="link">leer_más() →</a>
       </article>
-      <article class="svc reveal">
+      <article class="svc">
         <span class="num">&lt;agentes_ia /&gt;</span>
         <h3>Agentes de IA</h3>
         <p>Automatiza la atención al cliente, las citas o los procesos internos con agentes que trabajan 24/7.</p>
@@ -278,22 +322,22 @@ body.js .tile.term .t-line.show{opacity:1}
       <p>Cuatro commits y tu proyecto está en producción. Proceso claro, comunicación directa y entregas que puedes probar desde la primera semana.</p>
     </div>
     <div class="steps">
-      <div class="step reveal">
+      <div class="step">
         <span class="num">a1f9c2e · feat: descubrimiento</span>
         <h3>Entendemos tu negocio</h3>
         <p>Una reunión para conocer el problema real. Sin compromiso y sin tecnicismos.</p>
       </div>
-      <div class="step reveal">
+      <div class="step">
         <span class="num">8b3d41a · docs: propuesta</span>
         <h3>Plan y presupuesto cerrado</h3>
         <p>Qué construimos, en cuánto tiempo y cuánto cuesta. Por escrito.</p>
       </div>
-      <div class="step reveal">
+      <div class="step">
         <span class="num">c47e90b · build: desarrollo</span>
         <h3>Entregas semanales</h3>
         <p>Ves el avance en una URL real cada semana y ajustamos sobre la marcha.</p>
       </div>
-      <div class="step reveal">
+      <div class="step">
         <span class="num">f12ab34 · release: lanzamiento</span>
         <h3>Producción y soporte</h3>
         <p>Desplegamos, te formamos y nos quedamos cerca para lo que necesites.</p>
@@ -311,10 +355,10 @@ body.js .tile.term .t-line.show{opacity:1}
     </div>
     <!-- PLACEHOLDER: sustituir estas tarjetas por casos reales cuando estén publicados -->
     <div class="projects">
-      <article class="proj reveal">
+      <article class="proj">
         <div class="browser-bar" aria-hidden="true">
           <span class="dots"><i></i><i></i><i></i></span>
-          <span class="url">comboilabs.com/casos/obra-en-vivo</span>
+          <span class="url">/casos/obra-en-vivo</span>
         </div>
         <div class="proj-body">
           <span class="badge">// TODO: publicar</span>
@@ -324,10 +368,10 @@ body.js .tile.term .t-line.show{opacity:1}
           </div>
         </div>
       </article>
-      <article class="proj reveal">
+      <article class="proj">
         <div class="browser-bar" aria-hidden="true">
           <span class="dots"><i></i><i></i><i></i></span>
-          <span class="url">comboilabs.com/casos/agente-citas</span>
+          <span class="url">/casos/agente-citas</span>
         </div>
         <div class="proj-body">
           <span class="badge">// TODO: publicar</span>
@@ -337,10 +381,10 @@ body.js .tile.term .t-line.show{opacity:1}
           </div>
         </div>
       </article>
-      <article class="proj reveal">
+      <article class="proj">
         <div class="browser-bar" aria-hidden="true">
           <span class="dots"><i></i><i></i><i></i></span>
-          <span class="url">comboilabs.com/casos/app-turismo</span>
+          <span class="url">/casos/app-turismo</span>
         </div>
         <div class="proj-body">
           <span class="badge">// TODO: publicar</span>
@@ -383,6 +427,8 @@ body.js .tile.term .t-line.show{opacity:1}
 
 <div id="site-footer"></div>
 
+<script src="assets/terminal-easter-egg.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/debug-runner.js"></script>
 </body>
 </html>
