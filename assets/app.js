@@ -9,21 +9,32 @@
   var page = document.body.dataset.page || 'home';
   document.body.classList.add('js');
 
-  // TODO: mover a proxy FastAPI antes de producción en Hetzner
-  // endpoint destino: POST /api/chat en el servidor
-  var ANTHROPIC_API_KEY = "sk-ant-XXXXXXXXXX"; // sustituir por la key real
-
-  var CHAT_SYSTEM_PROMPT = "Eres el agente de demostración de Comboi Labs, una empresa de desarrollo de software de Benissa (Alicante). Estás integrado en la home de su web para demostrar cómo funciona un agente de IA real.\n\n"
-    + "Responde siempre en español, de forma breve (máximo 2-3 frases), directa y con un tono cercano pero profesional. Sin emojis en exceso.\n\n"
-    + "Puedes responder sobre:\n"
-    + "- Qué hace Comboi Labs (desarrollo web a medida, apps móviles, agentes de IA)\n"
-    + "- Cómo funciona un agente de IA\n"
-    + "- Precios orientativos (siempre \"depende del proyecto, en una llamada lo vemos\")\n"
-    + "- Cómo contactar (hola@comboilabs.com o el formulario de contacto)\n\n"
-    + "Si te preguntan algo fuera de ese ámbito, redirige con gracia hacia Comboi Labs.\n"
-    + "Al final de cada respuesta, si tiene sentido, añade una pregunta de seguimiento corta.";
+  // El system prompt y la API key viven en el proxy (ver chat-proxy/), nunca en el navegador.
+  // TODO: tras desplegar chat-proxy/ (ver chat-proxy/README.md), pega aquí la URL real.
+  var CHAT_API_ENDPOINT = "https://REEMPLAZA-CON-TU-WORKER.workers.dev";
 
   var chatLive = false; // pasa a true cuando el visitante usa el chat real del bento
+
+  function chatEndpointConfigured(){
+    return CHAT_API_ENDPOINT.indexOf('REEMPLAZA-CON-TU-WORKER') === -1;
+  }
+
+  /* ---- Llamada compartida al proxy del chat (bento + chat flotante) ---- */
+  function requestChatReply(history){
+    if(!chatEndpointConfigured()){
+      return Promise.reject(new Error('not-configured'));
+    }
+    return fetch(CHAT_API_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history })
+    }).then(function(res){
+      if(!res.ok) throw new Error('http ' + res.status);
+      return res.json();
+    }).then(function(data){
+      return data.text || '';
+    });
+  }
 
   /* ---- Navegación (una sola fuente de verdad) ---- */
   var NAV = [
@@ -31,7 +42,7 @@
     { key:'proyectos', label:'Proyectos', file:'proyectos', ext:'.json', href:'index.html#proyectos' },
     { key:'nosotros',  label:'Nosotros',  file:'nosotros',  ext:'.md',   href:'nosotros.html' }
   ];
-  var ACTIVE = { home:null, servicios:'servicios', servicio:'servicios', nosotros:'nosotros', contacto:null };
+  var ACTIVE = { home:null, servicios:'servicios', servicio:'servicios', nosotros:'nosotros', contacto:null, caso:'proyectos' };
   var activeKey = ACTIVE[page];
 
   /* ---- Detector de "en viewport" (scroll + rAF) ---- */
@@ -440,32 +451,121 @@
       var typingBubble = addBubble('', 'them');
       typingBubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
 
-      fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: CHAT_SYSTEM_PROMPT,
-          messages: conversationHistory
-        })
-      }).then(function(res){
-        if(!res.ok) throw new Error('http ' + res.status);
-        return res.json();
-      }).then(function(data){
-        var text = (data.content && data.content[0] && data.content[0].text) || '';
+      requestChatReply(conversationHistory).then(function(text){
         conversationHistory.push({ role: 'assistant', content: text });
         if(conversationHistory.length > 6) conversationHistory = conversationHistory.slice(-6);
         typingBubble.innerHTML = '';
         streamReply(typingBubble, text);
-      }).catch(function(){
+      }).catch(function(err){
         typingBubble.remove();
-        addBubble('// error de conexión · reintenta', 'them error');
+        if(err && err.message === 'not-configured'){
+          addBubble('// demo aún no conectada · escríbenos a hola@comboilabs.com', 'them error');
+        } else {
+          addBubble('// error de conexión · reintenta', 'them error');
+        }
+      }).then(function(){
+        input.disabled = false;
+        send.disabled = false;
+        input.focus();
+      });
+    }
+
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter') sendMessage();
+    });
+  }
+
+  /* ---- Chat flotante (disponible en todas las páginas) ---- */
+  function renderFloatingChat(){
+    var wrap = document.createElement('div');
+    wrap.className = 'float-chat';
+    wrap.innerHTML =
+      '<div class="float-chat-panel" id="floatChatPanel" hidden>' +
+        '<div class="term-bar" aria-hidden="true">' +
+          '<i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i>' +
+          '<span class="term-title">agente_comboi.ts</span>' +
+          '<button type="button" class="float-chat-close" id="floatChatClose" aria-label="Cerrar chat">✕</button>' +
+        '</div>' +
+        '<div class="float-chat-messages" id="floatChatMessages">' +
+          '<div class="bubble them">Hola 👋 Soy el agente de Comboi Labs. Pregúntame lo que quieras sobre nuestros servicios.</div>' +
+        '</div>' +
+        '<div class="float-chat-input-row">' +
+          '<input type="text" id="floatChatInput" placeholder="Escribe tu pregunta…" aria-label="Tu mensaje">' +
+          '<button type="button" id="floatChatSend" aria-label="Enviar">→</button>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="float-chat-toggle" id="floatChatToggle" aria-expanded="false" aria-controls="floatChatPanel" aria-label="Abrir chat">' +
+        '<span aria-hidden="true">💬</span>' +
+      '</button>';
+    document.body.appendChild(wrap);
+
+    var toggle = wrap.querySelector('#floatChatToggle');
+    var panel = wrap.querySelector('#floatChatPanel');
+    var closeBtn = wrap.querySelector('#floatChatClose');
+    var messages = wrap.querySelector('#floatChatMessages');
+    var input = wrap.querySelector('#floatChatInput');
+    var send = wrap.querySelector('#floatChatSend');
+    var history = [];
+    var open = false;
+
+    function setOpen(v){
+      open = v;
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.innerHTML = open ? '<span aria-hidden="true">✕</span>' : '<span aria-hidden="true">💬</span>';
+      if(open) input.focus();
+    }
+
+    toggle.addEventListener('click', function(){ setOpen(!open); });
+    closeBtn.addEventListener('click', function(){ setOpen(false); });
+
+    function addBubble(text, who){
+      var b = document.createElement('div');
+      b.className = 'bubble ' + who;
+      b.textContent = text;
+      messages.appendChild(b);
+      messages.scrollTop = messages.scrollHeight;
+      return b;
+    }
+
+    function streamReply(bubble, text){
+      var i = 0;
+      var timer = setInterval(function(){
+        i++;
+        bubble.textContent = text.slice(0, i);
+        messages.scrollTop = messages.scrollHeight;
+        if(i >= text.length) clearInterval(timer);
+      }, 16);
+    }
+
+    function sendMessage(){
+      var text = input.value.trim();
+      if(!text) return;
+
+      addBubble(text, 'us');
+      history.push({ role: 'user', content: text });
+      if(history.length > 8) history = history.slice(-8);
+
+      input.value = '';
+      input.disabled = true;
+      send.disabled = true;
+
+      var typingBubble = addBubble('', 'them');
+      typingBubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+
+      requestChatReply(history).then(function(text){
+        history.push({ role: 'assistant', content: text });
+        if(history.length > 8) history = history.slice(-8);
+        typingBubble.innerHTML = '';
+        streamReply(typingBubble, text);
+      }).catch(function(err){
+        typingBubble.remove();
+        if(err && err.message === 'not-configured'){
+          addBubble('Este chat aún no está conectado. Escríbenos a hola@comboilabs.com o usa el formulario de contacto.', 'them error');
+        } else {
+          addBubble('// error de conexión · reintenta', 'them error');
+        }
       }).then(function(){
         input.disabled = false;
         send.disabled = false;
@@ -658,6 +758,7 @@
   wireMintPhone();
   wireBentoChat();
   wireChatPlaceholder();
+  renderFloatingChat();
   wireReveal();
   wireMicroAnimations();
   wireTileInteractivity();
