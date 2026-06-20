@@ -162,9 +162,16 @@
             '<span>TypeScript · React · FastAPI</span>'+
             '<span class="ok">✓ build passing</span>'+
             '<span>hecho_en_benissa</span>'+
+            '<button type="button" class="term-hint" id="termHintBtn" title="Terminal secreta">⌨ Ctrl+K</button>'+
           '</div>'+
         '</div>'+
       '</footer>';
+    var hintBtn = document.getElementById('termHintBtn');
+    if(hintBtn){
+      hintBtn.addEventListener('click', function(){
+        if(window.cmbTerminal) window.cmbTerminal.open();
+      });
+    }
   }
 
   /* ---- Reveal al hacer scroll ---- */

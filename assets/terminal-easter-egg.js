@@ -272,4 +272,10 @@
 
   buildUI();
   document.addEventListener('keydown', onGlobalKeydown);
+
+  window.cmbTerminal = {
+    open: openTerminal,
+    close: closeTerminal,
+    toggle: function(){ isOpen ? closeTerminal() : openTerminal(); }
+  };
 })();
