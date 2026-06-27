@@ -18,6 +18,9 @@ function sanitizeName(raw){
 }
 
 async function kv(command){
+  if(!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN){
+    throw new Error('faltan KV_REST_API_URL/KV_REST_API_TOKEN');
+  }
   var res = await fetch(process.env.KV_REST_API_URL, {
     method: 'POST',
     headers: {
@@ -26,7 +29,10 @@ async function kv(command){
     },
     body: JSON.stringify([command])
   });
-  if(!res.ok) throw new Error('kv error ' + res.status);
+  if(!res.ok){
+    var body = await res.text().catch(function(){ return ''; });
+    throw new Error('kv error ' + res.status + ': ' + body);
+  }
   var data = await res.json();
   return data[0] && data[0].result;
 }
@@ -50,7 +56,8 @@ module.exports = async function handler(req, res){
       var list = await getLeaderboard();
       res.status(200).json({ scores: list.slice(0, limit) });
     } catch(e){
-      res.status(502).json({ error: 'no se pudo leer el ranking' });
+      console.error('kv get error', e.message);
+      res.status(502).json({ error: 'no se pudo leer el ranking', debug: e.message });
     }
     return;
   }
