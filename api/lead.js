@@ -34,6 +34,6 @@ module.exports = async function handler(req, res){
     res.status(200).json({ ok: true });
   } catch(e){
     console.error('lead notify error (formulario)', e.message);
-    res.status(502).json({ error: 'no se pudo enviar el mensaje' });
+    res.status(502).json({ error: 'no se pudo enviar el mensaje', debug: e.message });
   }
 };
