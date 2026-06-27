@@ -1,5 +1,4 @@
 {
-  "trailingSlash": true,
   "rewrites": [
     { "source": "/servicios/", "destination": "/servicios.html" },
     { "source": "/contacto/", "destination": "/contacto.html" },
