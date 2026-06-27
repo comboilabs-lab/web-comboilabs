@@ -27,14 +27,14 @@ async function kv(command){
       Authorization: 'Bearer ' + process.env.KV_REST_API_TOKEN,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify([command])
+    body: JSON.stringify(command)
   });
   if(!res.ok){
     var body = await res.text().catch(function(){ return ''; });
     throw new Error('kv error ' + res.status + ': ' + body);
   }
   var data = await res.json();
-  return data[0] && data[0].result;
+  return data && data.result;
 }
 
 async function getLeaderboard(){
