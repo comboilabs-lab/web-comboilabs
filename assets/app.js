@@ -9,21 +9,14 @@
   var page = document.body.dataset.page || 'home';
   document.body.classList.add('js');
 
-  // El system prompt y la API key viven en el proxy (ver chat-proxy/), nunca en el navegador.
-  // TODO: tras desplegar chat-proxy/ (ver chat-proxy/README.md), pega aquí la URL real.
-  var CHAT_API_ENDPOINT = "https://REEMPLAZA-CON-TU-WORKER.workers.dev";
+  // El system prompt, la API key y el ranking viven en funciones serverless de Vercel
+  // (ver api/), nunca en el navegador. Mismo origen que la web: rutas relativas, sin URL que configurar.
+  var CHAT_API_ENDPOINT = "/api/chat";
 
   var chatLive = false; // pasa a true cuando el visitante usa el chat real del bento
 
-  function chatEndpointConfigured(){
-    return CHAT_API_ENDPOINT.indexOf('REEMPLAZA-CON-TU-WORKER') === -1;
-  }
-
   /* ---- Llamada compartida al proxy del chat (bento + chat flotante) ---- */
   function requestChatReply(history){
-    if(!chatEndpointConfigured()){
-      return Promise.reject(new Error('not-configured'));
-    }
     return fetch(CHAT_API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -463,13 +456,9 @@
         if(conversationHistory.length > 6) conversationHistory = conversationHistory.slice(-6);
         typingBubble.innerHTML = '';
         streamReply(typingBubble, text);
-      }).catch(function(err){
+      }).catch(function(){
         typingBubble.remove();
-        if(err && err.message === 'not-configured'){
-          addBubble('// demo aún no conectada · escríbenos a hola@comboilabs.com', 'them error');
-        } else {
-          addBubble('// error de conexión · reintenta', 'them error');
-        }
+        addBubble('// error de conexión · reintenta o escríbenos a hola@comboilabs.com', 'them error');
       }).then(function(){
         input.disabled = false;
         send.disabled = false;
@@ -575,13 +564,9 @@
         if(history.length > 8) history = history.slice(-8);
         typingBubble.innerHTML = '';
         streamReply(typingBubble, text);
-      }).catch(function(err){
+      }).catch(function(){
         typingBubble.remove();
-        if(err && err.message === 'not-configured'){
-          addBubble('Este chat aún no está conectado. Escríbenos a hola@comboilabs.com o usa el formulario de contacto.', 'them error');
-        } else {
-          addBubble('// error de conexión · reintenta', 'them error');
-        }
+        addBubble('// error de conexión · reintenta o escríbenos a hola@comboilabs.com', 'them error');
       }).then(function(){
         input.disabled = false;
         send.disabled = false;

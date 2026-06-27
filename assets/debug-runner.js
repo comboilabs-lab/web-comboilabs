@@ -6,15 +6,19 @@
 (function(){
 
   var RECORD_KEY = 'comboi_debug_runner_record';
+  var SCORES_ENDPOINT = '/api/scores';
   var GROUND_OFFSET = 28;
 
   var tile, canvas, ctx, scoreEl, badgeEl, instructionsEl, touchJumpBtn, touchActionBtn;
+  var boardBtn, overlay, overlayMsg, saveForm, nameInput, saveBtn, skipBtn, board, boardList, boardClose;
   var W = 0, H = 0, groundY = 0;
   var SCALE = 1;
   var state = 'idle';
   var frame = 0;
   var score = 0;
   var record = 0;
+  var awaitingName = false;
+  var boardOpen = false;
   var player, obstacles, collectibles, floatTexts;
   var framesSinceSpawn, spawnInterval, obstaclesSinceCollectible, nextCollectibleAt;
   var gridOffset = 0;
@@ -42,10 +46,27 @@
     instructionsEl = document.getElementById('grInstructions');
     touchJumpBtn = document.getElementById('touchJump');
     touchActionBtn = document.getElementById('touchAction');
+    boardBtn = document.getElementById('grBoardBtn');
+    overlay = document.getElementById('grOverlay');
+    overlayMsg = document.getElementById('grOverlayMsg');
+    saveForm = document.getElementById('grSaveForm');
+    nameInput = document.getElementById('grNameInput');
+    saveBtn = document.getElementById('grSaveBtn');
+    skipBtn = document.getElementById('grSkipBtn');
+    board = document.getElementById('grBoard');
+    boardList = document.getElementById('grBoardList');
+    boardClose = document.getElementById('grBoardClose');
     if(!tile || !canvas || !canvas.getContext) return;
     ctx = canvas.getContext('2d');
 
     try { record = parseInt(localStorage.getItem(RECORD_KEY), 10) || 0; } catch(e){ record = 0; }
+
+    if(boardBtn){
+      boardBtn.addEventListener('click', function(e){ e.stopPropagation(); openBoard(); });
+    }
+    if(boardClose) boardClose.addEventListener('click', function(e){ e.stopPropagation(); closeBoard(); });
+    if(skipBtn) skipBtn.addEventListener('click', function(e){ e.stopPropagation(); dismissNamePrompt(); });
+    if(saveForm) saveForm.addEventListener('submit', handleSaveScore);
 
     var isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     if(instructionsEl){
@@ -61,6 +82,8 @@
       if(wasActive){
         state = 'idle';
         resetWorld();
+        dismissNamePrompt();
+        closeBoard();
         updateTouchUI();
       }
     });
@@ -70,19 +93,21 @@
     document.addEventListener('keydown', function(e){
       if(e.code !== 'Space' && e.key !== ' ') return;
       var active = document.activeElement;
-      if(active && (active.id === 'cmbTermInput' || active.id === 'chatInput')) return;
+      if(active && (active.id === 'cmbTermInput' || active.id === 'chatInput' || active.id === 'grNameInput')) return;
       if(inView) e.preventDefault();
       handleAction();
     });
 
     if(touchJumpBtn){
       touchJumpBtn.addEventListener('click', function(){
+        if(awaitingName || boardOpen) return;
         ensureSound();
         if(state === 'playing') jump();
       });
     }
     if(touchActionBtn){
       touchActionBtn.addEventListener('click', function(){
+        if(awaitingName || boardOpen) return;
         ensureSound();
         if(state === 'idle' || state === 'gameover'){ startGame(); }
       });
@@ -163,12 +188,16 @@
 
   /* ---- controles ---- */
   function handleAction(){
+    if(awaitingName) return;
+    if(boardOpen){ closeBoard(); return; }
     ensureSound();
     if(state === 'idle' || state === 'gameover') startGame();
     else if(state === 'playing') jump();
   }
 
   function startGame(){
+    dismissNamePrompt();
+    closeBoard();
     if(idleJumpTimer !== null){ clearInterval(idleJumpTimer); idleJumpTimer = null; }
     if(tile) tile.classList.remove('idle-pulse');
     if(badgeEl) badgeEl.style.display = 'none';
@@ -208,7 +237,7 @@
     drawBackground();
 
     if(state === 'idle'){ drawIdle(); }
-    else if(state === 'playing'){ updatePlaying(); drawPlaying(); }
+    else if(state === 'playing'){ if(!boardOpen) updatePlaying(); drawPlaying(); }
     else if(state === 'gameover'){ drawGameOver(); }
 
     frame++;
@@ -416,12 +445,113 @@
   /* ---- game over ---- */
   function gameOver(){
     state = 'gameover';
-    if(score > record){
+    var isNewRecord = score > record;
+    if(isNewRecord){
       record = score;
       try { localStorage.setItem(RECORD_KEY, String(record)); } catch(e){}
     }
     playSound('gameover');
     updateTouchUI();
+    closeBoard();
+    if(score > 0) showNamePrompt(isNewRecord);
+  }
+
+  /* ---- ranking global ---- */
+  function showNamePrompt(isNewRecord){
+    if(!overlay) return;
+    awaitingName = true;
+    if(saveForm) saveForm.hidden = false;
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'guardar récord'; }
+    if(overlayMsg) overlayMsg.textContent = (isNewRecord ? '¡nuevo récord! ' : '') + 'puntuación: ' + score + ' · ¿la guardamos en el ranking?';
+    if(nameInput) nameInput.value = '';
+    overlay.hidden = false;
+    if(nameInput) nameInput.focus();
+  }
+
+  function dismissNamePrompt(){
+    awaitingName = false;
+    if(overlay) overlay.hidden = true;
+  }
+
+  function handleSaveScore(e){
+    e.preventDefault();
+    var name = nameInput ? nameInput.value : '';
+    if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'guardando…'; }
+    fetch(SCORES_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, score: score })
+    }).then(function(res){
+      if(!res.ok) throw new Error('http ' + res.status);
+      return res.json();
+    }).then(function(data){
+      if(overlayMsg){
+        overlayMsg.textContent = data.rank ? ('¡guardado! puesto #' + data.rank + ' del ranking') : '¡guardado!';
+      }
+      if(saveForm) saveForm.hidden = true;
+      setTimeout(dismissNamePrompt, 1600);
+    }).catch(function(){
+      if(overlayMsg) overlayMsg.textContent = 'no se pudo guardar, inténtalo de nuevo';
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'guardar récord'; }
+    });
+  }
+
+  function renderBoardList(scores){
+    if(!boardList) return;
+    boardList.textContent = '';
+    if(!scores || !scores.length){
+      var empty = document.createElement('p');
+      empty.className = 'gr-board-empty';
+      empty.textContent = 'sin puntuaciones todavía, ¡sé el primero!';
+      boardList.appendChild(empty);
+      return;
+    }
+    scores.forEach(function(entry, i){
+      var li = document.createElement('li');
+      var rank = document.createElement('span');
+      rank.className = 'gr-rank';
+      rank.textContent = '#' + (i + 1);
+      var name = document.createElement('span');
+      name.textContent = entry.name;
+      var pts = document.createElement('span');
+      pts.textContent = entry.score;
+      li.appendChild(rank);
+      li.appendChild(name);
+      li.appendChild(pts);
+      boardList.appendChild(li);
+    });
+  }
+
+  function openBoard(){
+    if(!board) return;
+    boardOpen = true;
+    board.hidden = false;
+    if(boardList){
+      boardList.textContent = '';
+      var loading = document.createElement('p');
+      loading.className = 'gr-board-empty';
+      loading.textContent = 'cargando…';
+      boardList.appendChild(loading);
+    }
+    fetch(SCORES_ENDPOINT).then(function(res){
+      if(!res.ok) throw new Error('http ' + res.status);
+      return res.json();
+    }).then(function(data){
+      renderBoardList(data.scores);
+    }).catch(function(){
+      if(boardList){
+        boardList.textContent = '';
+        var err = document.createElement('p');
+        err.className = 'gr-board-empty';
+        err.textContent = 'no se pudo cargar el ranking';
+        boardList.appendChild(err);
+      }
+    });
+  }
+
+  function closeBoard(){
+    boardOpen = false;
+    if(board) board.hidden = true;
   }
 
   function drawGameOver(){
