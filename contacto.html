@@ -36,6 +36,7 @@
   border-radius:10px;padding:13px 15px;
 }
 .ok-msg.show{display:block}
+.ok-msg.err{color:#CC3A2E;background:transparent}
 </style>
 </head>
 <body data-page="contacto">
@@ -57,7 +58,6 @@
 <section style="padding-top:30px">
   <div class="wrap">
     <div class="contact-grid">
-      <!-- TODO: conectar el formulario con un backend o Formspree. Sin captcha de Google. -->
       <form class="form reveal" id="contactForm" action="#" method="post" novalidate>
         <div class="field">
           <label for="name">// nombre <span class="req">*</span></label>
@@ -80,8 +80,8 @@
           <label for="website">No rellenar este campo</label>
           <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
         </div>
-        <div class="ok-msg" id="okMsg">&gt; mensaje preparado ✓ · conecta el backend para enviarlo de verdad</div>
-        <button type="submit" class="btn">Enviar mensaje →</button>
+        <div class="ok-msg" id="okMsg">&gt; mensaje enviado ✓ · te respondemos en 24-48h laborables</div>
+        <button type="submit" class="btn" id="contactSubmit">Enviar mensaje →</button>
         <span class="note">Al enviar aceptas nuestra política de privacidad. Nada de spam, prometido.</span>
       </form>
 
@@ -148,13 +148,38 @@ plazo:   <span class="s">"próximo hueco: consúltanos"</span></pre>
 (function(){
   var form = document.getElementById('contactForm');
   var ok = document.getElementById('okMsg');
+  var submitBtn = document.getElementById('contactSubmit');
   if(!form) return;
   form.addEventListener('submit', function(e){
     e.preventDefault();
-    // honeypot: si está relleno, ignoramos en silencio
-    if(form.website.value) return;
     if(!form.checkValidity()){ form.reportValidity(); return; }
-    ok.classList.add('show');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando…';
+    ok.classList.remove('show', 'err');
+
+    fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.name.value,
+        email: form.email.value,
+        empresa: form.empresa.value,
+        mensaje: form.mensaje.value,
+        website: form.website.value
+      })
+    }).then(function(res){
+      if(!res.ok) throw new Error('http ' + res.status);
+      ok.textContent = '> mensaje enviado ✓ · te respondemos en 24-48h laborables';
+      ok.classList.add('show');
+      form.reset();
+    }).catch(function(){
+      ok.textContent = '> no se pudo enviar · escríbenos directamente a hola@comboilabs.com';
+      ok.classList.add('show', 'err');
+    }).then(function(){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar mensaje →';
+    });
   });
 })();
 
