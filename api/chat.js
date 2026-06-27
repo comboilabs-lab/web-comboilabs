@@ -48,7 +48,8 @@ module.exports = async function handler(req, res){
   if(!upstream.ok){
     var errBody = await upstream.text().catch(function(){ return ''; });
     console.error('Anthropic upstream error', upstream.status, errBody);
-    res.status(502).json({ error: 'error del proveedor de IA' });
+    // DEBUG TEMPORAL: se quita en cuanto diagnostiquemos el 502.
+    res.status(502).json({ error: 'error del proveedor de IA', debugStatus: upstream.status, debugBody: errBody });
     return;
   }
 
