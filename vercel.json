@@ -1,0 +1,12 @@
+{
+  "trailingSlash": true,
+  "rewrites": [
+    { "source": "/servicios", "destination": "/servicios.html" },
+    { "source": "/contacto", "destination": "/contacto.html" },
+    { "source": "/nosotros", "destination": "/nosotros.html" },
+    { "source": "/servicios/desarrollo-web", "destination": "/servicio-desarrollo-web.html" },
+    { "source": "/servicios/apps-moviles", "destination": "/servicio-apps-moviles.html" },
+    { "source": "/servicios/automatizacion-ia", "destination": "/servicio-agentes-ia.html" },
+    { "source": "/casos/benissa-app", "destination": "/caso-benissa-app.html" }
+  ]
+}
