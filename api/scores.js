@@ -57,7 +57,7 @@ module.exports = async function handler(req, res){
       res.status(200).json({ scores: list.slice(0, limit) });
     } catch(e){
       console.error('kv get error', e.message);
-      res.status(502).json({ error: 'no se pudo leer el ranking', debug: e.message });
+      res.status(502).json({ error: 'no se pudo leer el ranking' });
     }
     return;
   }
