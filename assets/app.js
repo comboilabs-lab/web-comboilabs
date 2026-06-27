@@ -213,20 +213,6 @@
       onInView(t, function(){ t.classList.add('in'); });
     });
 
-    // Terminal de deploy
-    var termTile = bento.querySelector('.tile.term');
-    if(termTile){
-      var tLines = termTile.querySelectorAll('.t-line');
-      if(reduced){ tLines.forEach(function(l){ l.classList.add('show'); }); }
-      else {
-        onInView(termTile, function(){
-          tLines.forEach(function(l, i){
-            setTimeout(function(){ l.classList.add('show'); }, 700 + i * 750);
-          });
-        });
-      }
-    }
-
     // Contadores
     function countUp(el){
       var target = parseInt(el.getAttribute('data-count'), 10);
@@ -662,7 +648,7 @@
 
   /* ---- Señales de bienvenida por tile (pulso de borde + badge "· click") ---- */
   function markTileWelcome(tile){
-    if(!tile.matches('.tile.dark, .tile.chat, .tile.mintbg, .tile.term')) return;
+    if(!tile.matches('.tile.dark, .tile.chat, .tile.mintbg')) return;
     tile.classList.add('welcome-pulse');
     var hint = tile.querySelector('.interact-hint');
     if(hint) setTimeout(function(){ hint.classList.add('visible'); }, 400);
@@ -672,7 +658,7 @@
   function wireTileInteractivity(){
     var bento = document.getElementById('bento');
     if(!bento) return;
-    var mainTiles = bento.querySelectorAll('.tile.dark, .tile.chat, .tile.mintbg, .tile.term');
+    var mainTiles = bento.querySelectorAll('.tile.dark, .tile.chat, .tile.mintbg');
 
     mainTiles.forEach(function(tile, i){
       var hint = tile.querySelector('.interact-hint');
