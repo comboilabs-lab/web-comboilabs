@@ -31,9 +31,9 @@
 
   /* ---- Navegación (una sola fuente de verdad) ---- */
   var NAV = [
-    { key:'servicios', label:'Servicios', file:'servicios', ext:'.tsx', href:'servicios.html' },
-    { key:'proyectos', label:'Proyectos', file:'proyectos', ext:'.json', href:'index.html#proyectos' },
-    { key:'nosotros',  label:'Nosotros',  file:'nosotros',  ext:'.md',   href:'nosotros.html' }
+    { key:'servicios', label:'Servicios', file:'servicios', ext:'.tsx', href:'/servicios/' },
+    { key:'proyectos', label:'Proyectos', file:'proyectos', ext:'.json', href:'/#proyectos' },
+    { key:'nosotros',  label:'Nosotros',  file:'nosotros',  ext:'.md',   href:'/nosotros/' }
   ];
   var ACTIVE = { home:null, servicios:'servicios', servicio:'servicios', nosotros:'nosotros', contacto:null, caso:'proyectos' };
   var activeKey = ACTIVE[page];
@@ -81,9 +81,9 @@
     host.outerHTML =
       '<header class="site" data-header="'+variant+'">'+
         '<div class="wrap nav">'+
-          '<a href="index.html" class="logo">'+
+          '<a href="/" class="logo">'+
             '<span class="term-dots" aria-hidden="true"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></span>'+
-            '<img class="logo-img" src="assets/img/logo-comboi.png" alt="Comboi Labs">'+
+            '<img class="logo-img" src="/assets/img/logo-comboi.png" alt="Comboi Labs">'+
             '<span class="head-caret" aria-hidden="true"></span>'+
           '</a>'+
           '<nav class="nav-links" id="navLinks" aria-label="Navegación principal">'+
@@ -91,7 +91,7 @@
             '<button class="theme-toggle" id="themeToggle" aria-label="Cambiar a modo oscuro">'+
               '<span class="theme-icon">☽</span>'+
             '</button>'+
-            '<a href="contacto.html" class="btn small">Contacto →</a>'+
+            '<a href="/contacto/" class="btn small">Contacto →</a>'+
           '</nav>'+
           '<button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button>'+
         '</div>'+
@@ -143,10 +143,10 @@
         '<div class="wrap foot">'+
           '<span class="left">© 2026 COMBOI LABS · BENISSA · ALICANTE</span>'+
           '<div class="links">'+
-            '<a href="servicios.html">Servicios</a>'+
-            '<a href="index.html#proyectos">Proyectos</a>'+
-            '<a href="nosotros.html">Nosotros</a>'+
-            '<a href="contacto.html">Contacto</a>'+
+            '<a href="/servicios/">Servicios</a>'+
+            '<a href="/#proyectos">Proyectos</a>'+
+            '<a href="/nosotros/">Nosotros</a>'+
+            '<a href="/contacto/">Contacto</a>'+
           '</div>'+
         '</div>'+
         '<div class="statusbar">'+
