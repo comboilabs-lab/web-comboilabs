@@ -20,7 +20,12 @@ module.exports = async function handler(req, res){
     hasChat: !!chat,
     chatVal: chat,                   // el chat_id no es secreto
     chatLen: chat.length,            // esperado: 10
-    chatHasSpace: /\s/.test(chat)
+    chatHasSpace: /\s/.test(chat),
+    // nombres (no valores) de las variables presentes en la funcion, filtrados
+    // a lo relevante: sirve para detectar typos/espacios en el NOMBRE de la clave.
+    envKeys: Object.keys(process.env).filter(function(k){
+      return /tele|admin|databas|anthro|resend|kv_/i.test(k);
+    }).sort()
   };
 
   if(token && chat){
