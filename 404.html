@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>
+(function(){
+  var t = localStorage.getItem('comboi_theme');
+  if (t === 'dark') document.documentElement.classList.add('dark');
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Página no encontrada — Comboi Labs</title>
+<meta name="description" content="Esta página no existe. Vuelve al inicio o escríbenos si buscabas algo concreto.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/styles.css">
+<style>
+.nf{min-height:60vh;display:flex;flex-direction:column;justify-content:center;padding:60px 0}
+.nf .term{font-family:'Space Mono',monospace;font-size:14px;color:var(--ink-3);margin-bottom:18px}
+.nf .term .err{color:var(--cobalt)}
+.nf h1{font-size:clamp(64px,14vw,150px);line-height:1;font-weight:700;letter-spacing:-.03em;
+  font-variation-settings:'wdth' 125;margin-bottom:10px}
+.nf h1 .hl{color:var(--cobalt)}
+.nf p.sub{font-size:18px;color:var(--ink-2);max-width:520px;margin:10px 0 30px}
+.nf .ctas{display:flex;gap:14px;flex-wrap:wrap}
+</style>
+</head>
+<body data-page="404">
+
+<div id="site-header"></div>
+
+<main>
+<div class="wrap">
+  <div class="nf">
+    <div class="term">~/comboi $ cat esta-pagina.html<br><span class="err">cat: esta-pagina.html: No such file or directory</span></div>
+    <h1>4<span class="hl">0</span>4</h1>
+    <p class="sub">Esta página no existe o ha cambiado de sitio. Si buscabas algo concreto, dinos qué y te llevamos.</p>
+    <div class="ctas">
+      <a class="btn" href="/">← Volver al inicio</a>
+      <a class="btn ghost" href="/contacto/">Escríbenos</a>
+    </div>
+  </div>
+</div>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="/assets/app.js"></script>
+<script src="/assets/theme.js"></script>
+</body>
+</html>
