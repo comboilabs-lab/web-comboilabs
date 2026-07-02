@@ -230,6 +230,9 @@ html.dark .proj.live{background:var(--surface)}
   position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:10px;background:rgba(10,13,20,.92);padding:14px;text-align:center;
 }
+/* el display:flex de arriba anularía el atributo hidden con el que el JS
+   muestra/oculta estos paneles; sin esta regla el ranking se queda fijo */
+.gr-overlay[hidden],.gr-board[hidden]{display:none}
 .gr-overlay-msg{font-family:'Space Mono',monospace;font-size:11px;color:#5BE0B3;margin:0}
 .gr-save-form{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .gr-save-form input{
