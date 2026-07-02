@@ -1,6 +1,7 @@
 // Panel de administracion server-rendered, servido en /admin (via rewrite en vercel.json).
 // Login usuario/contrasena (ADMIN_USER + ADMIN_PASSWORD_HASH bcrypt), sesion en cookie
 // firmada (httpOnly, Secure). Vistas: Leads (con filtro y cambio de estado) y Conversaciones.
+// Estilo: mismo sistema de diseno que la web publica (assets/styles.css).
 
 var getSql = require('./_lib/db').getSql;
 var auth = require('./_lib/auth');
@@ -30,105 +31,192 @@ function fmtDate(v){
 }
 
 // --- layout ---
-function layout(title, view, bodyHtml){
-  var tabs = view === 'login' ? '' :
-    '<nav class="tabs">'
-    + '<a class="' + (view === 'leads' ? 'on' : '') + '" href="/admin?view=leads">leads</a>'
-    + '<a class="' + (view === 'chats' || view === 'chat' ? 'on' : '') + '" href="/admin?view=chats">conversaciones</a>'
-    + '<form method="post" action="/admin" class="logout"><input type="hidden" name="action" value="logout"><button type="submit">salir</button></form>'
-    + '</nav>';
+var CSS = ''
+  + ':root{--bg:#F5F4ED;--surface:#FFFFFF;--surface-2:#FAF9F4;--ink:#221F1C;--ink-2:#6E6860;--ink-3:#A9A299;'
+  + '--accent:#D97757;--accent-deep:#B35A3D;--accent-soft:#F4E3DA;--line:#E8E2D6;--ok:#3D8A5F;--ok-soft:#E2F0E7;'
+  + '--warn:#B07C1F;--warn-soft:#F6ECD4;--radius:14px}'
+  + '*{margin:0;padding:0;box-sizing:border-box}'
+  + 'body{background:var(--bg);color:var(--ink);font-family:"Archivo",sans-serif;font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}'
+  + '.mono{font-family:"Space Mono",monospace}'
+  + 'a{color:var(--accent-deep);text-decoration:none}a:hover{text-decoration:underline}'
+  + '.wrap{max-width:1180px;margin:0 auto;padding:0 24px}'
 
+  // header
+  + 'header{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}'
+  + '.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;height:62px;flex-wrap:wrap}'
+  + '.brand{display:flex;align-items:baseline;gap:10px;font-weight:700;font-size:17px;letter-spacing:.3px;white-space:nowrap}'
+  + '.brand em{font-style:normal;color:var(--accent)}'
+  + '.brand .sub{font-family:"Space Mono",monospace;font-weight:400;font-size:11px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}'
+  + '.nav{display:flex;align-items:center;gap:8px}'
+  + '.nav a{padding:7px 14px;border-radius:8px;color:var(--ink-2);font-weight:600;font-size:13.5px}'
+  + '.nav a:hover{background:var(--surface-2);text-decoration:none;color:var(--ink)}'
+  + '.nav a.on{background:var(--ink);color:var(--surface)}'
+  + '.logout button{cursor:pointer;font:inherit;font-weight:600;font-size:13px;color:var(--ink-2);background:none;'
+  + 'border:1.5px solid var(--line);border-radius:8px;padding:6px 13px}'
+  + '.logout button:hover{border-color:var(--ink-3);color:var(--ink)}'
+
+  + 'main{padding:28px 0 70px}'
+  + '.pagehead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}'
+  + 'h1{font-size:22px;font-weight:700;letter-spacing:-.01em}'
+  + '.count{color:var(--ink-3);font-size:13px}'
+
+  // tarjetas de resumen
+  + '.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}'
+  + '.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}'
+  + '.stat .k{font-family:"Space Mono",monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}'
+  + '.stat .v{font-size:26px;font-weight:700;margin-top:2px;letter-spacing:-.02em}'
+  + '.stat.hl .v{color:var(--accent-deep)}'
+
+  // filtros
+  + '.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}'
+  + '.filters a{padding:6px 14px;border:1.5px solid var(--line);border-radius:20px;color:var(--ink-2);font-size:13px;font-weight:600;background:var(--surface)}'
+  + '.filters a:hover{text-decoration:none;border-color:var(--ink-3);color:var(--ink)}'
+  + '.filters a.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}'
+
+  // tabla en tarjeta
+  + '.tablecard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:auto;box-shadow:0 1px 3px rgba(34,31,28,.04)}'
+  + 'table{width:100%;border-collapse:collapse;min-width:820px}'
+  + 'th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}'
+  + 'tbody tr:last-child td{border-bottom:none}'
+  + 'tbody tr:hover{background:var(--surface-2)}'
+  + 'th{font-family:"Space Mono",monospace;color:var(--ink-3);font-weight:400;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;background:var(--surface-2)}'
+  + 'td.msg{max-width:380px;white-space:pre-wrap;word-break:break-word;color:var(--ink-2);font-size:13.5px}'
+  + 'td .name{font-weight:600}'
+  + '.dim{color:var(--ink-3);font-size:13px}.muted{color:var(--ink-2)}'
+
+  // pills de estado
+  + '.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}'
+  + '.pill.nuevo{background:var(--accent-soft);color:var(--accent-deep)}'
+  + '.pill.contactado{background:var(--warn-soft);color:var(--warn)}'
+  + '.pill.cerrado{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line)}'
+  + 'select{background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;cursor:pointer}'
+  + 'select:hover{border-color:var(--ink-3)}'
+  + 'select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}'
+
+  // login
+  + '.login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}'
+  + '.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:30px 28px;width:100%;max-width:380px;box-shadow:0 12px 40px rgba(34,31,28,.08)}'
+  + '.card .brand{margin-bottom:6px;font-size:19px}'
+  + '.card h1{font-size:15px;font-weight:600;color:var(--ink-2);margin-bottom:14px}'
+  + '.card label{display:block;color:var(--ink-2);font-size:12.5px;font-weight:600;margin:14px 0 5px}'
+  + '.card input{width:100%;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);border-radius:9px;padding:10px 12px;font:inherit}'
+  + '.card input:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}'
+  + '.btn{cursor:pointer;font:inherit;width:100%;background:var(--accent);color:#fff;border:none;border-radius:9px;'
+  + 'padding:11px 16px;font-weight:700;margin-top:20px;font-size:14.5px}'
+  + '.btn:hover{background:var(--accent-deep)}'
+  + '.err{background:#FBEAE7;color:#A33D2A;border-radius:8px;padding:9px 12px;font-size:13px;margin-top:14px}'
+
+  // conversaciones
+  + '.chat-list{display:flex;flex-direction:column;gap:10px}'
+  + '.chat-row{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:14px 16px;'
+  + 'background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}'
+  + '.chat-row:hover{border-color:var(--ink-3)}'
+  + '.chat-row a{font-weight:600;color:var(--ink)}'
+  + '.badge{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--ink-2);background:var(--surface-2);'
+  + 'border:1px solid var(--line);border-radius:20px;padding:3px 10px;white-space:nowrap}'
+  + '.back{display:inline-block;margin-bottom:14px;font-weight:600}'
+  + '.thread{max-width:760px;display:flex;flex-direction:column}'
+  + '.bubble{max-width:80%;padding:10px 14px;border-radius:14px;margin:5px 0;white-space:pre-wrap;word-break:break-word;font-size:13.5px}'
+  + '.bubble.user{background:var(--accent);color:#fff;margin-left:auto;border-bottom-right-radius:4px}'
+  + '.bubble.assistant{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}'
+
+  + '.empty{color:var(--ink-3);padding:56px 20px;text-align:center;background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius)}'
+  + '@media (max-width:640px){.bar{height:auto;padding:10px 0}main{padding-top:18px}}';
+
+function head(title){
   return '<!DOCTYPE html><html lang="es"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'
     + '<meta name="robots" content="noindex, nofollow">'
-    + '<title>' + esc(title) + ' — admin Comboi Labs</title>'
-    + '<style>'
-    + ':root{--bg:#0c0e12;--panel:#14171d;--line:#262b34;--ink:#e6e9ef;--ink2:#9aa3b2;--ink3:#5c6675;--mint:#4fd1a1;--cobalt:#5b8cff;--red:#ff6b5e;--amber:#ffb84d}'
-    + '*{box-sizing:border-box}'
-    + 'body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.5}'
-    + 'a{color:var(--cobalt);text-decoration:none}a:hover{text-decoration:underline}'
-    + '.wrap{max-width:1100px;margin:0 auto;padding:24px 18px 60px}'
-    + 'h1{font-size:18px;margin:0 0 4px}.muted{color:var(--ink2)}.dim{color:var(--ink3)}'
-    + '.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:14px}'
-    + '.tabs{display:flex;gap:6px;align-items:center;flex-wrap:wrap}'
-    + '.tabs a{padding:6px 12px;border:1px solid var(--line);border-radius:8px;color:var(--ink2)}'
-    + '.tabs a.on{color:var(--bg);background:var(--mint);border-color:var(--mint);font-weight:700}'
-    + '.logout{margin-left:6px}.logout button,.filters a,.btn{cursor:pointer;font:inherit}'
-    + '.logout button{background:none;border:1px solid var(--line);border-radius:8px;color:var(--ink3);padding:6px 12px}'
-    + '.filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}'
-    + '.filters a{padding:4px 10px;border:1px solid var(--line);border-radius:20px;color:var(--ink2);font-size:12.5px}'
-    + '.filters a.on{background:var(--panel);color:var(--ink);border-color:var(--ink3)}'
-    + 'table{width:100%;border-collapse:collapse}'
-    + 'th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top}'
-    + 'th{color:var(--ink3);font-weight:400;font-size:12px;text-transform:uppercase;letter-spacing:.04em}'
-    + 'td.msg{max-width:360px;white-space:pre-wrap;word-break:break-word;color:var(--ink2)}'
-    + '.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;border:1px solid var(--line)}'
-    + '.pill.nuevo{color:var(--mint);border-color:var(--mint)}'
-    + '.pill.contactado{color:var(--amber);border-color:var(--amber)}'
-    + '.pill.cerrado{color:var(--ink3)}'
-    + 'select{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}'
-    + '.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px;max-width:420px}'
-    + '.card label{display:block;color:var(--ink2);font-size:12px;margin:10px 0 4px}'
-    + '.card input{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit}'
-    + '.btn{background:var(--mint);color:var(--bg);border:none;border-radius:8px;padding:10px 16px;font-weight:700;margin-top:16px}'
-    + '.err{color:var(--red);font-size:13px;margin-top:12px}'
-    + '.chat-row{display:flex;gap:10px;justify-content:space-between;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}'
-    + '.bubble{max-width:75%;padding:9px 12px;border-radius:10px;margin:8px 0;white-space:pre-wrap;word-break:break-word}'
-    + '.bubble.user{background:var(--cobalt);color:#fff;margin-left:auto}'
-    + '.bubble.assistant{background:var(--panel);border:1px solid var(--line)}'
-    + '.empty{color:var(--ink3);padding:30px 0;text-align:center}'
-    + '</style></head><body><div class="wrap">'
-    + (view === 'login' ? '' : '<div class="topbar"><div><h1>~/comboi/admin</h1><span class="dim">panel interno</span></div>' + tabs + '</div>')
-    + bodyHtml
-    + '</div></body></html>';
+    + '<title>' + esc(title) + ' — Admin · Comboi Labs</title>'
+    + '<link rel="icon" href="/favicon.ico" sizes="any">'
+    + '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    + '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">'
+    + '<style>' + CSS + '</style></head>';
+}
+
+function brandHtml(){
+  return '<div class="brand">Comboi <em>Labs</em> <span class="sub">admin</span></div>';
+}
+
+function layout(title, view, bodyHtml){
+  if(view === 'login'){
+    return head(title) + '<body><div class="login-shell">' + bodyHtml + '</div></body></html>';
+  }
+  var nav = '<div class="nav">'
+    + '<a class="' + (view === 'leads' ? 'on' : '') + '" href="/admin?view=leads">Leads</a>'
+    + '<a class="' + (view === 'chats' || view === 'chat' ? 'on' : '') + '" href="/admin?view=chats">Conversaciones</a>'
+    + '<form method="post" action="/admin" class="logout"><input type="hidden" name="action" value="logout"><button type="submit">Salir</button></form>'
+    + '</div>';
+  return head(title)
+    + '<body><header><div class="wrap bar">' + brandHtml() + nav + '</div></header>'
+    + '<main><div class="wrap">' + bodyHtml + '</div></main></body></html>';
 }
 
 // --- vistas ---
 function loginView(error){
-  return layout('login', 'login',
-    '<div class="card"><h1>Acceso admin</h1><p class="muted" style="font-size:12.5px">Panel interno de Comboi Labs.</p>'
+  return layout('Acceso', 'login',
+    '<div class="card">' + brandHtml() + '<h1>Accede al panel interno</h1>'
     + '<form method="post" action="/admin">'
     + '<input type="hidden" name="action" value="login">'
-    + '<label for="u">usuario</label><input id="u" name="user" autocomplete="username" autofocus>'
-    + '<label for="p">contraseña</label><input id="p" name="password" type="password" autocomplete="current-password">'
+    + '<label for="u">Usuario</label><input id="u" name="user" autocomplete="username" autofocus>'
+    + '<label for="p">Contraseña</label><input id="p" name="password" type="password" autocomplete="current-password">'
     + (error ? '<div class="err">' + esc(error) + '</div>' : '')
-    + '<button class="btn" type="submit">entrar →</button>'
+    + '<button class="btn" type="submit">Entrar</button>'
     + '</form></div>');
 }
 
 async function leadsView(sql, estado){
-  var rows;
+  var rows, counts;
   if(estado && ESTADOS.indexOf(estado) !== -1){
     rows = await sql`SELECT * FROM leads WHERE estado = ${estado} ORDER BY created_at DESC LIMIT 500`;
   } else {
     estado = '';
     rows = await sql`SELECT * FROM leads ORDER BY created_at DESC LIMIT 500`;
   }
+  counts = await sql`SELECT estado, count(*)::int AS n FROM leads GROUP BY estado`;
+
+  var byEstado = { nuevo: 0, contactado: 0, cerrado: 0 };
+  var total = 0;
+  counts.forEach(function(c){ byEstado[c.estado] = c.n; total += c.n; });
+
+  var stats = '<div class="stats">'
+    + '<div class="stat"><div class="k">Total</div><div class="v">' + total + '</div></div>'
+    + '<div class="stat hl"><div class="k">Nuevos</div><div class="v">' + byEstado.nuevo + '</div></div>'
+    + '<div class="stat"><div class="k">Contactados</div><div class="v">' + byEstado.contactado + '</div></div>'
+    + '<div class="stat"><div class="k">Cerrados</div><div class="v">' + byEstado.cerrado + '</div></div>'
+    + '</div>';
 
   var filters = ['', 'nuevo', 'contactado', 'cerrado'].map(function(f){
-    var label = f || 'todos';
-    var on = (estado === f) ? ' on' : '';
+    var label = f ? (f.charAt(0).toUpperCase() + f.slice(1) + 's') : 'Todos';
+    var on = (estado === f) ? ' class="on"' : '';
     var href = f ? ('/admin?view=leads&estado=' + f) : '/admin?view=leads';
-    return '<a class="' + on.trim() + '" href="' + href + '">' + label + '</a>';
+    return '<a' + on + ' href="' + href + '">' + label + '</a>';
   }).join('');
 
-  var body = '<div class="filters">' + filters + '</div>';
+  var body = '<div class="pagehead"><h1>Leads</h1>'
+    + '<span class="count">' + rows.length + (estado ? ' con estado "' + esc(estado) + '"' : ' en total') + '</span></div>'
+    + stats
+    + '<div class="filters">' + filters + '</div>';
 
   if(!rows.length){
-    return layout('leads', 'leads', body + '<div class="empty">// no hay leads' + (estado ? ' con estado "' + esc(estado) + '"' : '') + '</div>');
+    return layout('Leads', 'leads', body + '<div class="empty">No hay leads' + (estado ? ' con estado "' + esc(estado) + '"' : ' todavía') + '.</div>');
   }
 
   var trs = rows.map(function(r){
     var estadoSel = ESTADOS.map(function(e){
       return '<option value="' + e + '"' + (e === r.estado ? ' selected' : '') + '>' + e + '</option>';
     }).join('');
-    var contacto = esc(r.email) + (r.telefono ? '<br><span class="dim">' + esc(r.telefono) + '</span>' : '') + (r.empresa ? '<br><span class="dim">' + esc(r.empresa) + '</span>' : '');
+    var contacto = '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>'
+      + (r.telefono ? '<br><span class="dim">' + esc(r.telefono) + '</span>' : '')
+      + (r.empresa ? '<br><span class="dim">' + esc(r.empresa) + '</span>' : '');
     return '<tr>'
       + '<td class="dim" style="white-space:nowrap">' + fmtDate(r.created_at) + '</td>'
-      + '<td>' + esc(r.nombre) + '</td>'
+      + '<td><span class="name">' + esc(r.nombre) + '</span></td>'
       + '<td>' + contacto + '</td>'
       + '<td class="dim">' + esc(r.pagina_origen || '—') + '</td>'
       + '<td class="msg">' + esc(r.mensaje) + '</td>'
+      + '<td><span class="pill ' + esc(r.estado) + '">' + esc(r.estado) + '</span></td>'
       + '<td><form method="post" action="/admin">'
         + '<input type="hidden" name="action" value="set-estado">'
         + '<input type="hidden" name="lead_id" value="' + r.id + '">'
@@ -138,10 +226,10 @@ async function leadsView(sql, estado){
       + '</tr>';
   }).join('');
 
-  return layout('leads', 'leads', body
-    + '<table><thead><tr><th>fecha</th><th>nombre</th><th>contacto</th><th>página</th><th>mensaje</th><th>estado</th></tr></thead>'
-    + '<tbody>' + trs + '</tbody></table>'
-    + '<p class="dim" style="margin-top:14px">' + rows.length + ' lead(s)</p>');
+  return layout('Leads', 'leads', body
+    + '<div class="tablecard"><table><thead><tr>'
+    + '<th>Fecha</th><th>Nombre</th><th>Contacto</th><th>Página</th><th>Mensaje</th><th>Estado</th><th>Cambiar</th>'
+    + '</tr></thead><tbody>' + trs + '</tbody></table></div>');
 }
 
 async function chatsView(sql){
@@ -153,34 +241,39 @@ async function chatsView(sql){
     ORDER BY s.created_at DESC
     LIMIT 300
   `;
+  var body = '<div class="pagehead"><h1>Conversaciones</h1>'
+    + '<span class="count">' + rows.length + ' sesión(es)</span></div>';
   if(!rows.length){
-    return layout('conversaciones', 'chats', '<div class="empty">// aún no hay conversaciones</div>');
+    return layout('Conversaciones', 'chats', body + '<div class="empty">Aún no hay conversaciones del chat.</div>');
   }
   var items = rows.map(function(r){
     return '<div class="chat-row">'
       + '<div><a href="/admin?view=chat&id=' + esc(r.id) + '">' + fmtDate(r.created_at) + '</a>'
       + ' <span class="dim">· ' + esc(r.pagina_origen || '—') + '</span></div>'
-      + '<div class="muted">' + r.n + ' mensaje(s)</div>'
+      + '<span class="badge">' + r.n + ' mensaje(s)</span>'
       + '</div>';
   }).join('');
-  return layout('conversaciones', 'chats', items + '<p class="dim" style="margin-top:14px">' + rows.length + ' sesión(es)</p>');
+  return layout('Conversaciones', 'chats', body + '<div class="chat-list">' + items + '</div>');
 }
 
 async function chatDetailView(sql, id){
   var sessions = await sql`SELECT * FROM chat_sessions WHERE id = ${id}`;
   if(!sessions.length){
-    return layout('conversación', 'chat', '<p><a href="/admin?view=chats">← volver</a></p><div class="empty">// sesión no encontrada</div>');
+    return layout('Conversación', 'chat',
+      '<a class="back" href="/admin?view=chats">← Volver a conversaciones</a>'
+      + '<div class="empty">Sesión no encontrada.</div>');
   }
   var s = sessions[0];
   var msgs = await sql`SELECT role, content, created_at FROM chat_messages WHERE session_id = ${id} ORDER BY created_at ASC`;
   var bubbles = msgs.length ? msgs.map(function(m){
     return '<div class="bubble ' + (m.role === 'user' ? 'user' : 'assistant') + '">' + esc(m.content) + '</div>';
-  }).join('') : '<div class="empty">// sesión sin mensajes</div>';
+  }).join('') : '<div class="empty">Sesión sin mensajes.</div>';
 
-  return layout('conversación', 'chat',
-    '<p><a href="/admin?view=chats">← volver a conversaciones</a></p>'
-    + '<p class="dim">' + fmtDate(s.created_at) + ' · ' + esc(s.pagina_origen || '—') + ' · <span style="user-select:all">' + esc(s.id) + '</span></p>'
-    + '<div style="max-width:760px">' + bubbles + '</div>');
+  return layout('Conversación', 'chat',
+    '<a class="back" href="/admin?view=chats">← Volver a conversaciones</a>'
+    + '<div class="pagehead"><h1>Conversación</h1>'
+    + '<span class="count">' + fmtDate(s.created_at) + ' · ' + esc(s.pagina_origen || '—') + ' · <span class="mono" style="user-select:all">' + esc(s.id) + '</span></span></div>'
+    + '<div class="thread">' + bubbles + '</div>');
 }
 
 // --- handler ---
@@ -230,7 +323,7 @@ module.exports = async function handler(req, res){
       return;
     }
 
-    sendHtml(res, 400, layout('error', 'login', '<div class="empty">acción no válida</div>'));
+    sendHtml(res, 400, layout('Error', 'leads', '<div class="empty">Acción no válida.</div>'));
     return;
   }
 
@@ -245,7 +338,7 @@ module.exports = async function handler(req, res){
   try {
     sql = getSql();
   } catch(e){
-    sendHtml(res, 200, layout('sin BD', 'leads', '<div class="empty">// falta DATABASE_URL: configura Neon en Vercel</div>'));
+    sendHtml(res, 200, layout('Sin BD', 'leads', '<div class="empty">Falta DATABASE_URL: configura Neon en Vercel.</div>'));
     return;
   }
 
@@ -261,6 +354,6 @@ module.exports = async function handler(req, res){
     sendHtml(res, 200, html);
   } catch(e){
     console.error('admin render error', e.message);
-    sendHtml(res, 500, layout('error', view, '<div class="empty">// error al leer la base de datos</div>'));
+    sendHtml(res, 500, layout('Error', view, '<div class="empty">Error al leer la base de datos.</div>'));
   }
 };
