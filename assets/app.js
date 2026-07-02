@@ -11,16 +11,52 @@
 
   // El system prompt, la API key y el ranking viven en funciones serverless de Vercel
   // (ver api/), nunca en el navegador. Mismo origen que la web: rutas relativas, sin URL que configurar.
-  var CHAT_API_ENDPOINT = "/api/chat";
+  // El historial de la conversacion se guarda en el servidor (BD); aqui solo enviamos
+  // cada mensaje nuevo asociado a un session_id.
+  var CHAT_SESSION_ENDPOINT = "/api/chat/session";
+  var CHAT_MESSAGE_ENDPOINT = "/api/chat/message";
 
   var chatLive = false; // pasa a true cuando el visitante usa el chat real del bento
 
-  /* ---- Llamada compartida al proxy del chat (bento + chat flotante) ---- */
-  function requestChatReply(history){
-    return fetch(CHAT_API_ENDPOINT, {
+  var chatSessionId = null;
+  var chatSessionPromise = null;
+
+  // Crea (una sola vez) la sesion de chat y cachea su id.
+  function ensureChatSession(){
+    if(chatSessionId) return Promise.resolve(chatSessionId);
+    if(chatSessionPromise) return chatSessionPromise;
+    chatSessionPromise = fetch(CHAT_SESSION_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history })
+      body: JSON.stringify({ pagina_origen: location.pathname })
+    }).then(function(res){
+      if(!res.ok) throw new Error('http ' + res.status);
+      return res.json();
+    }).then(function(data){
+      chatSessionId = data.session_id;
+      return chatSessionId;
+    }).catch(function(err){
+      chatSessionPromise = null; // permite reintentar en el proximo envio
+      throw err;
+    });
+    return chatSessionPromise;
+  }
+
+  /* ---- Llamada compartida al chat (bento + chat flotante) ----
+     Recibe el historial local (para no tocar los dos call sites) y envia al
+     servidor solo el ultimo mensaje del usuario; el resto del contexto lo
+     reconstruye el backend desde la BD. */
+  function requestChatReply(history){
+    var lastUser = '';
+    for(var i = history.length - 1; i >= 0; i--){
+      if(history[i].role === 'user'){ lastUser = history[i].content; break; }
+    }
+    return ensureChatSession().then(function(sid){
+      return fetch(CHAT_MESSAGE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sid, message: lastUser })
+      });
     }).then(function(res){
       if(!res.ok) throw new Error('http ' + res.status);
       return res.json();
