@@ -1,0 +1,14 @@
+# dependencias
+node_modules/
+
+# variables de entorno locales (nunca subir secretos)
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel
+
+# logs / temporales
+*.log
+.DS_Store

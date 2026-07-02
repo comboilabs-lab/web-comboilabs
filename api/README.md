@@ -1,52 +1,64 @@
 # Backend (Vercel Serverless Functions)
 
-Todo lo que necesita guardar un secreto o hablar con otro servicio vive aquí, nunca en el navegador. Al estar en `api/` dentro del mismo proyecto, Vercel las despliega solas junto con la web estática: no hay URL que configurar, todo se llama por ruta relativa (`/api/chat`, `/api/scores`, `/api/lead`).
+Todo lo que necesita un secreto, la base de datos o hablar con otro servicio vive aquí, nunca en el navegador. Al estar en `api/` dentro del mismo proyecto, Vercel las despliega solas junto con la web estática: no hay URL que configurar, todo se llama por ruta relativa.
 
-`api/_lib/` no son endpoints (Vercel ignora lo que empieza por `_`): es código compartido entre funciones.
+`api/_lib/` no son endpoints (Vercel ignora lo que empieza por `_`): es código compartido entre funciones (`db.js` conexión a Neon, `telegram.js` avisos, `ai.js` agente, `auth.js` sesión admin, `util.js` utilidades).
 
-## `chat.js` — agente de IA (chat flotante + demo del bento)
+> La configuración completa (Neon, variables de entorno, migración, admin) está en el
+> [README raíz](../README.md). Aquí solo el detalle de cada función.
 
-Necesita una variable de entorno en el proyecto de Vercel:
+## `lead.js` — formulario de contacto (`POST /api/lead`)
 
-- `ANTHROPIC_API_KEY` — tu API key de Anthropic.
+Recibe `{ nombre|name, email, empresa?, telefono?, mensaje, pagina_origen?, consent, website }`.
 
-Se configura en **Vercel → tu proyecto → Settings → Environment Variables**. Sin ella, el chat responde con un error de conexión (no rompe la web).
+1. **Honeypot** (`website`): si viene relleno, responde `200` sin guardar ni avisar.
+2. **Consentimiento RGPD** obligatorio (`consent`).
+3. **Rate limiting** en memoria por IP (5 envíos / 10 min por instancia).
+4. **Validación**: email válido, mensaje no vacío, longitudes máximas.
+5. **Guarda el lead** en la tabla `leads` (Neon). Si esto falla, devuelve error.
+6. **Avisa por Telegram** (best-effort): si falla, el lead ya está guardado (no bloquea).
 
-Cuando un visitante muestra intención real de contratar y da su nombre + contacto, el modelo usa la herramienta `capture_lead`, que dispara el mismo aviso por email que el formulario de contacto (ver más abajo).
+Variables: `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
 
-## `lead.js` — avisos de lead nuevo (formulario de contacto + chat)
+## `chat/session.js` — crea sesión de chat (`POST /api/chat/session`)
 
-Envía un email al equipo (vía [Resend](https://resend.com)) cada vez que alguien rellena el formulario de `contacto.html` o el chat detecta un lead. Pasos, una sola vez:
+Inserta una fila en `chat_sessions` y devuelve `{ session_id }` (uuid). Acepta `pagina_origen`.
 
-1. Crea una cuenta en [resend.com](https://resend.com), idealmente con el email `hola@comboilabs.com` (así no hace falta verificar dominio para recibir tus propios avisos).
-2. **API Keys → Create API Key** → cópiala.
-3. En Vercel → Settings → Environment Variables, añade:
-   - `RESEND_API_KEY` — la key de Resend.
-   - `LEAD_NOTIFY_TO` (opcional) — a qué email llegan los avisos. Por defecto `hola@comboilabs.com`.
-   - `LEAD_FROM` (opcional) — remitente. Por defecto `Comboi Labs <onboarding@resend.dev>`, que funciona sin verificar dominio mientras el destinatario sea el email de tu cuenta de Resend.
-4. Redeploy.
+## `chat/message.js` — mensaje del chat (`POST /api/chat/message`)
 
-Para que el remitente sea `algo@comboilabs.com` en vez de `onboarding@resend.dev`, verifica el dominio en Resend (Domains → Add Domain, añadiendo los registros DNS que te indique) y cambia `LEAD_FROM`.
+Recibe `{ session_id, message }`. Guarda el mensaje del usuario, genera la respuesta del agente con
+Anthropic (`ai.js`), la guarda como mensaje `assistant` y la devuelve. El historial vive en la BD.
 
-Sin `RESEND_API_KEY`, el formulario y el chat siguen funcionando pero el aviso por email falla en silencio (queda en los logs de Vercel) — no rompe la web.
+- **Límite: máx. 20 mensajes por sesión.** Al alcanzarlo, responde con un texto de cortesía sin llamar a la IA.
+- Cuando el visitante muestra intención real de contratar y da nombre + contacto, el modelo usa la
+  herramienta `capture_lead`: se registra un lead (`origen = chat`) y se avisa por Telegram.
 
-## `scores.js` — ranking global del Debug Runner (mini-juego de la home)
+Variables: `DATABASE_URL`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
 
-Guarda las puntuaciones en **Vercel KV** (un Redis gestionado). Pasos, una sola vez:
+> **Enchufar otro modelo / cambiar el prompt:** toda la lógica de IA está aislada en
+> [`_lib/ai.js`](_lib/ai.js) (`SYSTEM_PROMPT`, `TOOLS`, `generateReply`). El endpoint no sabe nada
+> de Anthropic; solo llama a `generateReply(history, onCaptureLead)`.
 
-1. En el dashboard de Vercel: **Storage → Create Database → KV**.
-2. Conéctalo a este proyecto (botón "Connect Project"). Vercel inyecta automáticamente `KV_REST_API_URL` y `KV_REST_API_TOKEN` como variables de entorno: no hay que copiar nada a mano.
-3. Vuelve a desplegar (un nuevo push a `main` ya lo dispara si el repo está conectado a Vercel).
+## `admin.js` — panel interno (`/admin`)
 
-Sin el KV conectado, el botón "🏆 ranking" y el aviso de guardar puntuación siguen ahí, pero fallan con un mensaje de error en vez de romper el juego.
+Server-rendered. Login contra `ADMIN_USER` + `ADMIN_PASSWORD_HASH` (bcrypt), sesión en cookie firmada
+con `ADMIN_SESSION_SECRET`. Vistas de leads (filtro + cambio de estado) y conversaciones. Servido en
+`/admin` mediante un rewrite en `vercel.json`.
+
+Variables: `DATABASE_URL`, `ADMIN_USER`, `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`.
+
+## `scores.js` — ranking del Debug Runner (`/api/scores`)
+
+Preexistente. Guarda las puntuaciones del mini-juego en **Vercel KV**. Al conectar un KV al proyecto,
+Vercel inyecta `KV_REST_API_URL` y `KV_REST_API_TOKEN`. Sin KV, el juego sigue pero el ranking falla
+con un mensaje de error.
 
 ## Probar en local
 
-Estas funciones no las sirve el servidor estático de desarrollo (`python -m http.server`, etc.) porque no son archivos, son código que ejecuta Vercel. Para probarlas en local:
-
 ```
+npm install
 npm install -g vercel
 vercel dev
 ```
 
-`vercel dev` levanta la web y las funciones de `api/` juntas en `http://localhost:3000`, usando las variables de entorno que tengas en tu cuenta de Vercel (te las pedirá la primera vez con `vercel env pull`).
+Levanta la web y las funciones juntas en `http://localhost:3000` usando tus variables de entorno.

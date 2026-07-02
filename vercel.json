@@ -6,6 +6,8 @@
     { "source": "/servicios/desarrollo-web/", "destination": "/servicio-desarrollo-web.html" },
     { "source": "/servicios/apps-moviles/", "destination": "/servicio-apps-moviles.html" },
     { "source": "/servicios/automatizacion-ia/", "destination": "/servicio-agentes-ia.html" },
-    { "source": "/casos/benissa-app/", "destination": "/caso-benissa-app.html" }
+    { "source": "/casos/benissa-app/", "destination": "/caso-benissa-app.html" },
+    { "source": "/privacidad/", "destination": "/privacidad.html" },
+    { "source": "/admin", "destination": "/api/admin" }
   ]
 }
