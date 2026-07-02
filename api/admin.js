@@ -93,6 +93,13 @@ var CSS = ''
   + 'select:hover{border-color:var(--ink-3)}'
   + 'select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}'
 
+  // boton de borrar (leads y conversaciones)
+  + '.del button{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;'
+  + 'background:none;border:1.5px solid var(--line);border-radius:8px;color:var(--ink-3);padding:0}'
+  + '.del button:hover{border-color:#C4432B;color:#C4432B;background:#FBEAE7}'
+  + '.del svg{width:15px;height:15px}'
+  + '.actions{display:flex;gap:8px;align-items:center}'
+
   // login
   + '.login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}'
   + '.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:30px 28px;width:100%;max-width:380px;box-shadow:0 12px 40px rgba(34,31,28,.08)}'
@@ -137,6 +144,19 @@ function head(title){
 
 function brandHtml(){
   return '<div class="brand">Comboi <em>Labs</em> <span class="sub">admin</span></div>';
+}
+
+var TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6"/></svg>';
+
+// Formulario inline de borrado con confirmacion nativa.
+function deleteForm(action, idField, idValue, back, confirmMsg, title){
+  return '<form method="post" action="/admin" class="del" onsubmit="return confirm(\'' + confirmMsg + '\')">'
+    + '<input type="hidden" name="action" value="' + action + '">'
+    + '<input type="hidden" name="' + idField + '" value="' + esc(String(idValue)) + '">'
+    + (back ? '<input type="hidden" name="back" value="' + esc(back) + '">' : '')
+    + '<button type="submit" title="' + esc(title) + '" aria-label="' + esc(title) + '">' + TRASH_SVG + '</button>'
+    + '</form>';
 }
 
 function layout(title, view, bodyHtml){
@@ -217,18 +237,20 @@ async function leadsView(sql, estado){
       + '<td class="dim">' + esc(r.pagina_origen || '—') + '</td>'
       + '<td class="msg">' + esc(r.mensaje) + '</td>'
       + '<td><span class="pill ' + esc(r.estado) + '">' + esc(r.estado) + '</span></td>'
-      + '<td><form method="post" action="/admin">'
+      + '<td><div class="actions"><form method="post" action="/admin">'
         + '<input type="hidden" name="action" value="set-estado">'
         + '<input type="hidden" name="lead_id" value="' + r.id + '">'
         + '<input type="hidden" name="back" value="' + esc(estado) + '">'
         + '<select name="estado" onchange="this.form.submit()">' + estadoSel + '</select>'
-      + '</form></td>'
+      + '</form>'
+      + deleteForm('delete-lead', 'lead_id', r.id, estado, '¿Borrar este lead definitivamente?', 'Borrar lead')
+      + '</div></td>'
       + '</tr>';
   }).join('');
 
   return layout('Leads', 'leads', body
     + '<div class="tablecard"><table><thead><tr>'
-    + '<th>Fecha</th><th>Nombre</th><th>Contacto</th><th>Página</th><th>Mensaje</th><th>Estado</th><th>Cambiar</th>'
+    + '<th>Fecha</th><th>Nombre</th><th>Contacto</th><th>Página</th><th>Mensaje</th><th>Estado</th><th>Acciones</th>'
     + '</tr></thead><tbody>' + trs + '</tbody></table></div>');
 }
 
@@ -250,8 +272,9 @@ async function chatsView(sql){
     return '<div class="chat-row">'
       + '<div><a href="/admin?view=chat&id=' + esc(r.id) + '">' + fmtDate(r.created_at) + '</a>'
       + ' <span class="dim">· ' + esc(r.pagina_origen || '—') + '</span></div>'
-      + '<span class="badge">' + r.n + ' mensaje(s)</span>'
-      + '</div>';
+      + '<div class="actions"><span class="badge">' + r.n + ' mensaje(s)</span>'
+      + deleteForm('delete-chat', 'chat_id', r.id, '', '¿Borrar esta conversación y todos sus mensajes?', 'Borrar conversación')
+      + '</div></div>';
   }).join('');
   return layout('Conversaciones', 'chats', body + '<div class="chat-list">' + items + '</div>');
 }
@@ -271,7 +294,9 @@ async function chatDetailView(sql, id){
 
   return layout('Conversación', 'chat',
     '<a class="back" href="/admin?view=chats">← Volver a conversaciones</a>'
-    + '<div class="pagehead"><h1>Conversación</h1>'
+    + '<div class="pagehead"><div class="actions"><h1>Conversación</h1>'
+    + deleteForm('delete-chat', 'chat_id', s.id, '', '¿Borrar esta conversación y todos sus mensajes?', 'Borrar conversación')
+    + '</div>'
     + '<span class="count">' + fmtDate(s.created_at) + ' · ' + esc(s.pagina_origen || '—') + ' · <span class="mono" style="user-select:all">' + esc(s.id) + '</span></span></div>'
     + '<div class="thread">' + bubbles + '</div>');
 }
@@ -320,6 +345,37 @@ module.exports = async function handler(req, res){
       }
       var back = ESTADOS.indexOf(body.back) !== -1 ? ('&estado=' + body.back) : '';
       redirect(res, '/admin?view=leads' + back);
+      return;
+    }
+
+    if(action === 'delete-lead'){
+      var delId = parseInt(body.lead_id, 10);
+      if(Number.isFinite(delId)){
+        try {
+          var sqlDL = getSql();
+          await sqlDL`DELETE FROM leads WHERE id = ${delId}`;
+        } catch(e){
+          console.error('admin delete-lead error', e.message);
+        }
+      }
+      var backDL = ESTADOS.indexOf(body.back) !== -1 ? ('&estado=' + body.back) : '';
+      redirect(res, '/admin?view=leads' + backDL);
+      return;
+    }
+
+    if(action === 'delete-chat'){
+      var chatId = String(body.chat_id || '');
+      // uuid v4; evita que un id malformado reviente el cast en Postgres
+      if(/^[0-9a-f-]{36}$/i.test(chatId)){
+        try {
+          var sqlDC = getSql();
+          // chat_messages cae en cascada (FK ON DELETE CASCADE)
+          await sqlDC`DELETE FROM chat_sessions WHERE id = ${chatId}`;
+        } catch(e){
+          console.error('admin delete-chat error', e.message);
+        }
+      }
+      redirect(res, '/admin?view=chats');
       return;
     }
 
