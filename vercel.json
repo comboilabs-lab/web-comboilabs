@@ -1,4 +1,15 @@
 {
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "statusCode": 301 },
+    { "source": "/servicios.html", "destination": "/servicios/", "statusCode": 301 },
+    { "source": "/servicio-desarrollo-web.html", "destination": "/servicios/desarrollo-web/", "statusCode": 301 },
+    { "source": "/servicio-apps-moviles.html", "destination": "/servicios/apps-moviles/", "statusCode": 301 },
+    { "source": "/servicio-agentes-ia.html", "destination": "/servicios/automatizacion-ia/", "statusCode": 301 },
+    { "source": "/nosotros.html", "destination": "/nosotros/", "statusCode": 301 },
+    { "source": "/contacto.html", "destination": "/contacto/", "statusCode": 301 },
+    { "source": "/caso-benissa-app.html", "destination": "/casos/benissa-app/", "statusCode": 301 },
+    { "source": "/privacidad.html", "destination": "/privacidad/", "statusCode": 301 }
+  ],
   "rewrites": [
     { "source": "/servicios/", "destination": "/servicios.html" },
     { "source": "/contacto/", "destination": "/contacto.html" },
